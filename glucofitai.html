@@ -1,0 +1,3282 @@
+<!DOCTYPE html>
+<html lang="de" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <!-- Optimierter Vollbild-Viewport für iPhone inkl. Notch / Dynamic Island -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+
+  <!-- iOS Home-Bildschirm Web-App Meta-Tags -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="GlucoFit AI" />
+  <meta name="theme-color" content="#090A0F" />
+
+  <title>GlucoFit AI – Fitness & Typ-1-Diabetes Coach</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: [
+              '-apple-system',
+              'BlinkMacSystemFont',
+              '"SF Pro Display"',
+              '"SF Pro Text"',
+              '"Helvetica Neue"',
+              'Arial',
+              'sans-serif'
+            ]
+          },
+          colors: {
+            ios: {
+              bg: '#090A0F',
+              card: '#141720',
+              input: '#1E2230',
+              emerald: '#30D158',
+              blue: '#0A84FF',
+              cyan: '#64D2FF',
+              amber: '#FF9F0A',
+              purple: '#BF5AF2',
+              red: '#FF453A',
+              gray: '#8E95A5'
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    /* Natives iOS Touch-Verhalten ohne störendes Aufblitzen */
+    * {
+      -webkit-tap-highlight-color: transparent;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      background-color: #090A0F;
+      color: #FFFFFF;
+      overscroll-behavior-y: none;
+      margin: 0;
+      padding: 0;
+      min-height: 100%;
+    }
+
+    /* Respektiert die iPhone Statusleiste (Notch / Dynamic Island) */
+    .safe-top {
+      padding-top: max(0.85rem, env(safe-area-inset-top));
+    }
+
+    /* Großzügiger Abstand unten, damit kostenlose Hoster-Banner (z.B. tiiny.host) niemals etwas verdecken */
+    .safe-bottom-pad {
+      padding-bottom: calc(120px + env(safe-area-inset-bottom));
+    }
+
+    /* iOS Dark Glassmorphism Karten-Stil */
+    .glass-card {
+      background: rgba(20, 23, 32, 0.88);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 22px;
+      box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.6);
+    }
+
+    /* iOS Input-Stil (16px Schrift verhindert automatisches Reinzoomen in iOS Safari) */
+    .ios-input {
+      background-color: #1E2230;
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 14px;
+      color: #FFFFFF;
+      font-size: 16px;
+      transition: border-color 0.2s ease, background-color 0.2s ease;
+    }
+
+    .ios-input:focus {
+      outline: none;
+      border-color: #0A84FF;
+    }
+
+    /* Tabular numbers für ruhige, exakt ausgerichtete Zahlenwerte */
+    .num-tab {
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Sanfte Einblend-Animation für Tabs & Modals */
+    @keyframes fadeSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .animate-view {
+      animation: fadeSlideIn 0.22s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    /* Dezente Scrollbars ausblenden */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* Tipp-Animation im KI-Chat */
+    @keyframes pulseDot {
+      0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+      40% { transform: scale(1); opacity: 1; }
+    }
+    .typing-dot:nth-child(1) { animation: pulseDot 1.2s infinite 0s; }
+    .typing-dot:nth-child(2) { animation: pulseDot 1.2s infinite 0.2s; }
+    .typing-dot:nth-child(3) { animation: pulseDot 1.2s infinite 0.4s; }
+  </style>
+</head>
+<body class="bg-ios-bg text-white font-sans antialiased selection:bg-ios-blue selection:text-white overflow-x-hidden">
+
+  <!-- Subtiler Hintergrund-Glow für Tiefe -->
+  <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
+    <div class="absolute -top-24 -left-24 w-72 h-72 rounded-full bg-ios-blue/10 blur-3xl"></div>
+    <div class="absolute top-40 -right-24 w-72 h-72 rounded-full bg-ios-emerald/10 blur-3xl"></div>
+  </div>
+
+  <!-- Haupt-Wrapper (mobile-first, zentriert auf größeren Screens) -->
+  <div class="min-h-screen max-w-lg mx-auto flex flex-col relative z-10">
+
+    <!-- ========================================================= -->
+    <!-- FIXIERTER GLAS-HEADER + LIVE DEXCOM G7 PILL + 4-TAB-BAR   -->
+    <!-- ========================================================= -->
+    <header class="sticky top-0 z-40 bg-[#090A0F]/85 backdrop-blur-2xl border-b border-white/[0.08] safe-top px-4 pb-3">
+      <!-- Obere Zeile: App-Titel & Prominente Live Dexcom G7 Blutzucker-Pill -->
+      <div class="flex items-center justify-between gap-2 mb-3">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-ios-emerald via-ios-blue to-ios-purple flex items-center justify-center shrink-0 shadow-lg shadow-ios-blue/25">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+            </svg>
+          </div>
+          <div class="truncate">
+            <h1 class="text-base sm:text-lg font-bold tracking-tight leading-none text-white">GlucoFit AI</h1>
+            <p id="header-date-label" class="text-[11px] text-ios-gray mt-1 font-medium truncate">Heute</p>
+          </div>
+        </div>
+
+        <!-- Klickbare Live Dexcom G7 Blutzucker-Pill (inkl. Sync-Status) -->
+        <button
+          id="header-bz-badge"
+          type="button"
+          aria-label="Dexcom G7 Blutzucker anzeigen oder anpassen"
+          class="flex items-center gap-2.5 px-3 py-1.5 rounded-2xl bg-ios-card/95 border border-white/10 active:scale-95 transition-transform shrink-0 shadow-md"
+        >
+          <span id="header-bz-dot" class="w-2.5 h-2.5 rounded-full bg-ios-emerald shrink-0"></span>
+          <div class="text-left leading-tight">
+            <div class="flex items-center gap-1">
+              <span id="header-bz-text" class="text-sm font-extrabold num-tab text-white">118 mg/dL →</span>
+            </div>
+            <p id="header-bz-sync-status" class="text-[10px] font-medium text-ios-emerald num-tab">Live · gerade eben</p>
+          </div>
+        </button>
+      </div>
+
+      <!-- iOS Segmented Tab-Leiste (oben fixiert, niemals von Bannern verdeckt) -->
+      <nav aria-label="Hauptnavigation" class="grid grid-cols-4 bg-ios-card p-1 rounded-2xl border border-white/[0.07]">
+        <button
+          type="button"
+          data-tab="heute"
+          class="nav-tab-btn py-2 px-1 rounded-xl text-xs font-semibold transition-all bg-ios-input text-white shadow"
+        >
+          Heute
+        </button>
+        <button
+          type="button"
+          data-tab="coach"
+          class="nav-tab-btn py-2 px-1 rounded-xl text-xs font-semibold transition-all text-ios-gray hover:text-white flex items-center justify-center gap-1"
+        >
+          <span>KI-Coach</span>
+          <span class="w-1.5 h-1.5 rounded-full bg-ios-blue"></span>
+        </button>
+        <button
+          type="button"
+          data-tab="koerper"
+          class="nav-tab-btn py-2 px-1 rounded-xl text-xs font-semibold transition-all text-ios-gray hover:text-white"
+        >
+          Körper
+        </button>
+        <button
+          type="button"
+          data-tab="setup"
+          class="nav-tab-btn py-2 px-1 rounded-xl text-xs font-semibold transition-all text-ios-gray hover:text-white"
+        >
+          Setup
+        </button>
+      </nav>
+    </header>
+
+    <!-- In-App Toast Banner (ersetzt alert()) -->
+    <div id="toast-container" class="fixed top-28 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 transition-all duration-300 transform -translate-y-2 w-max max-w-[92vw]">
+      <div class="bg-[#1E2230]/95 backdrop-blur-xl border border-white/15 px-4 py-2.5 rounded-full shadow-2xl flex items-center gap-2.5">
+        <span id="toast-dot" class="w-2.5 h-2.5 rounded-full bg-ios-emerald shrink-0"></span>
+        <span id="toast-msg" class="text-xs font-semibold text-white">Gespeichert</span>
+      </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- HAUPTINHALT DER 4 TABS                                    -->
+    <!-- ========================================================= -->
+    <main class="flex-1 px-4 pt-4 safe-bottom-pad">
+
+      <!-- ======================================================= -->
+      <!-- TAB 1: HEUTE (DAILY COCKPIT)                            -->
+      <!-- ======================================================= -->
+      <section id="tab-heute" class="animate-view space-y-4">
+
+        <!-- 1. Kaloriendefizit & Makros Karte -->
+        <div class="glass-card p-5">
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <span class="text-[11px] font-bold uppercase tracking-wider text-ios-emerald">Kaloriendefizit</span>
+              <h2 class="text-lg font-bold text-white mt-0.5">Tagesbilanz</h2>
+            </div>
+            <span id="cal-status-pill" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-ios-emerald/15 text-ios-emerald">
+              Im Defizit
+            </span>
+          </div>
+
+          <!-- SVG Fortschrittsring + Aufschlüsselung -->
+          <div class="flex items-center gap-5 my-2">
+            <div class="relative w-32 h-32 shrink-0 flex items-center justify-center">
+              <svg class="w-32 h-32 -rotate-90" viewBox="0 0 120 120">
+                <circle
+                  cx="60"
+                  cy="60"
+                  r="50"
+                  fill="none"
+                  stroke="#1E2230"
+                  stroke-width="11"
+                />
+                <circle
+                  id="cal-ring-progress"
+                  cx="60"
+                  cy="60"
+                  r="50"
+                  fill="none"
+                  stroke="#30D158"
+                  stroke-width="11"
+                  stroke-linecap="round"
+                  stroke-dasharray="314.16"
+                  stroke-dashoffset="314.16"
+                  style="transition: stroke-dashoffset 0.6s cubic-bezier(0.22, 1, 0.36, 1), stroke 0.3s ease;"
+                />
+              </svg>
+              <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+                <span id="cal-remaining-val" class="text-2xl font-extrabold num-tab leading-none text-white">2.200</span>
+                <span id="cal-remaining-label" class="text-[11px] text-ios-gray font-medium mt-1">kcal übrig</span>
+              </div>
+            </div>
+
+            <!-- Basis + Schritte-Bonus - Gegessen -->
+            <div class="flex-1 space-y-2 text-sm">
+              <div class="flex items-center justify-between">
+                <span class="text-ios-gray">Basis-Ziel</span>
+                <span id="cal-base-val" class="font-semibold num-tab text-white">2.200 kcal</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-ios-amber">
+                  + Schritte (~35/1k)
+                </span>
+                <span id="cal-bonus-val" class="font-semibold num-tab text-ios-amber">+0 kcal</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-ios-gray">− Gegessen</span>
+                <span id="cal-eaten-val" class="font-semibold num-tab text-white">0 kcal</span>
+              </div>
+              <div class="pt-1.5 border-t border-white/10 flex items-center justify-between text-xs">
+                <span class="text-ios-gray">Gesamtbudget</span>
+                <span id="cal-total-budget-val" class="font-bold num-tab text-ios-emerald">2.200 kcal</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Makronährstoff-Balken (Eiweiß, Kohlenhydrate, Fett) -->
+          <div class="grid grid-cols-3 gap-2.5 pt-4 mt-3 border-t border-white/[0.08]">
+            <!-- Eiweiß -->
+            <div class="bg-[#090A0F]/60 rounded-2xl p-2.5 border border-white/[0.05]">
+              <div class="flex items-center justify-between text-[11px] mb-1">
+                <span class="font-semibold text-ios-emerald">Eiweiß</span>
+                <span id="macro-p-pct" class="text-ios-gray num-tab">0%</span>
+              </div>
+              <div class="w-full h-1.5 bg-ios-input rounded-full overflow-hidden mb-1.5">
+                <div id="macro-p-bar" class="h-full bg-ios-emerald rounded-full transition-all duration-500" style="width: 0%"></div>
+              </div>
+              <p class="text-xs font-bold num-tab text-white">
+                <span id="macro-p-val">0</span><span class="text-ios-gray font-normal">/<span id="macro-p-target">180</span>g</span>
+              </p>
+            </div>
+
+            <!-- Kohlenhydrate -->
+            <div class="bg-[#090A0F]/60 rounded-2xl p-2.5 border border-white/[0.05]">
+              <div class="flex items-center justify-between text-[11px] mb-1">
+                <span class="font-semibold text-ios-blue">KH</span>
+                <span id="macro-c-pct" class="text-ios-gray num-tab">0%</span>
+              </div>
+              <div class="w-full h-1.5 bg-ios-input rounded-full overflow-hidden mb-1.5">
+                <div id="macro-c-bar" class="h-full bg-ios-blue rounded-full transition-all duration-500" style="width: 0%"></div>
+              </div>
+              <p class="text-xs font-bold num-tab text-white">
+                <span id="macro-c-val">0</span><span class="text-ios-gray font-normal">/<span id="macro-c-target">200</span>g</span>
+              </p>
+            </div>
+
+            <!-- Fett -->
+            <div class="bg-[#090A0F]/60 rounded-2xl p-2.5 border border-white/[0.05]">
+              <div class="flex items-center justify-between text-[11px] mb-1">
+                <span class="font-semibold text-ios-amber">Fett</span>
+                <span id="macro-f-pct" class="text-ios-gray num-tab">0%</span>
+              </div>
+              <div class="w-full h-1.5 bg-ios-input rounded-full overflow-hidden mb-1.5">
+                <div id="macro-f-bar" class="h-full bg-ios-amber rounded-full transition-all duration-500" style="width: 0%"></div>
+              </div>
+              <p class="text-xs font-bold num-tab text-white">
+                <span id="macro-f-val">0</span><span class="text-ios-gray font-normal">/<span id="macro-f-target">65</span>g</span>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Dexcom G7 Live-Sync & Omnipod 5 Bolus-Rechner -->
+        <div class="glass-card p-5 space-y-4">
+          <div class="flex items-center justify-between gap-2">
+            <div>
+              <span class="text-[11px] font-bold uppercase tracking-wider text-ios-blue">Dexcom G7 & Omnipod 5</span>
+              <h2 class="text-lg font-bold text-white mt-0.5">Glukose & Bolus-Hilfe</h2>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <button
+                id="dash-sync-now-btn"
+                type="button"
+                class="text-xs font-semibold text-ios-emerald bg-ios-emerald/15 px-3 py-1.5 rounded-xl active:scale-95 transition flex items-center gap-1"
+              >
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                </svg>
+                <span>Sync</span>
+              </button>
+              <button
+                id="open-bz-modal-btn"
+                type="button"
+                class="text-xs font-semibold text-white bg-ios-input px-3 py-1.5 rounded-xl border border-white/10 active:scale-95 transition"
+              >
+                Manuell
+              </button>
+            </div>
+          </div>
+
+          <!-- Dexcom G7 Live-Status-Box -->
+          <div id="bz-status-box" class="rounded-2xl p-3.5 bg-ios-emerald/10 border border-ios-emerald/25 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3 min-w-0">
+              <div id="bz-value-pill" class="px-3.5 py-2 rounded-xl bg-ios-emerald/20 text-ios-emerald font-extrabold text-2xl num-tab shrink-0">
+                118
+              </div>
+              <div class="min-w-0">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-xs font-semibold text-ios-gray">mg/dL</span>
+                  <span id="bz-zone-label" class="text-xs font-bold text-ios-emerald truncate">• Zielbereich</span>
+                </div>
+                <p id="bz-updated-time" class="text-[11px] text-ios-gray mt-0.5 truncate">Live · gerade eben</p>
+              </div>
+            </div>
+
+            <!-- Trendpfeil-Schnellwahl -->
+            <div class="flex flex-col items-end shrink-0">
+              <label for="bz-trend-select" class="text-[10px] uppercase tracking-wider text-ios-gray mb-1">Trend</label>
+              <select
+                id="bz-trend-select"
+                aria-label="Dexcom Trendpfeil"
+                class="bg-ios-input text-white font-bold text-base rounded-xl px-2.5 py-1.5 border border-white/10 focus:outline-none"
+              >
+                <option value="↓↓">↓↓</option>
+                <option value="↓">↓</option>
+                <option value="↘">↘</option>
+                <option value="→" selected>→</option>
+                <option value="↗">↗</option>
+                <option value="↑">↑</option>
+                <option value="↑↑">↑↑</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Omnipod 5 KH- & Korrektur-Rechner (nutzt automatisch den Live-Dexcom-Wert) -->
+          <div id="bolus-calculator-card" class="bg-[#090A0F]/65 rounded-2xl p-4 border border-white/[0.06] space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-ios-blue uppercase tracking-wider">Omnipod 5 Bolus-Rechner</span>
+              <span id="calc-factor-badge" class="text-[11px] text-ios-gray num-tab">Faktor: 2,2 IE / 10g KH</span>
+            </div>
+
+            <!-- Anzeige welcher Live-BZ gerade automatisch für die Korrektur genutzt wird -->
+            <div class="flex items-center justify-between text-xs bg-ios-input/70 px-3 py-2 rounded-xl border border-white/5">
+              <span class="text-ios-gray">Aktueller Dexcom-Wert für Korrektur:</span>
+              <span id="calc-live-bz-display" class="font-bold text-white num-tab">118 mg/dL (Ziel: 110)</span>
+            </div>
+
+            <div class="flex items-center gap-2.5">
+              <div class="relative flex-1">
+                <input
+                  id="bolus-carbs-input"
+                  type="number"
+                  inputmode="decimal"
+                  min="0"
+                  step="1"
+                  placeholder="Kohlenhydrate (g)"
+                  class="ios-input w-full px-3.5 py-2.5 pr-12 num-tab font-semibold"
+                />
+                <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-ios-gray font-semibold">g KH</span>
+              </div>
+
+              <label class="flex items-center gap-2 bg-ios-input px-3 py-2.5 rounded-xl border border-white/10 cursor-pointer select-none shrink-0">
+                <input id="bolus-correction-toggle" type="checkbox" checked class="accent-ios-blue w-4 h-4 rounded" />
+                <span class="text-xs font-semibold text-white">Korrektur</span>
+              </label>
+            </div>
+
+            <!-- Ergebnis-Box -->
+            <div class="flex items-center justify-between bg-ios-blue/15 border border-ios-blue/30 rounded-xl px-3.5 py-3">
+              <div>
+                <p class="text-xs text-ios-cyan font-semibold">Berechneter Bolus</p>
+                <p id="bolus-breakdown-text" class="text-[11px] text-ios-gray mt-0.5 num-tab">
+                  0,0 IE Mahlzeit + 0,0 IE Korrektur
+                </p>
+              </div>
+              <div class="text-right">
+                <span id="bolus-total-units" class="text-2xl font-extrabold text-white num-tab">0,0</span>
+                <span class="text-xs font-bold text-ios-cyan ml-0.5">IE</span>
+              </div>
+            </div>
+
+            <!-- Pflicht-Sicherheitshinweis -->
+            <p class="text-[11px] text-ios-gray flex items-start gap-1.5 leading-snug">
+              <svg class="w-4 h-4 text-ios-amber shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+              </svg>
+              <span>Persönliche Rechenhilfe – Bolus vor der Abgabe immer in der offiziellen Omnipod 5 App prüfen.</span>
+            </p>
+          </div>
+        </div>
+
+        <!-- 3. Heutiges Ernährungstagebuch -->
+        <div class="glass-card p-5 space-y-3.5">
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="text-[11px] font-bold uppercase tracking-wider text-ios-gray">Ernährung</span>
+              <h2 class="text-lg font-bold text-white mt-0.5">Heutige Mahlzeiten</h2>
+            </div>
+            <button
+              id="open-manual-meal-btn"
+              type="button"
+              class="bg-ios-emerald text-black font-bold text-xs px-3.5 py-2 rounded-xl active:scale-95 transition shadow-lg shadow-ios-emerald/20"
+            >
+              + Manuell
+            </button>
+          </div>
+
+          <div id="meals-list" class="space-y-2.5">
+            <!-- Mahlzeiten werden dynamisch gerendert -->
+          </div>
+
+          <!-- Leer-Zustand -->
+          <div id="meals-empty" class="py-8 px-4 text-center bg-[#090A0F]/45 rounded-2xl border border-dashed border-white/10">
+            <p class="text-sm font-semibold text-white">Noch keine Mahlzeiten heute</p>
+            <p class="text-xs text-ios-gray mt-1">
+              Schick dem <button type="button" onclick="switchTab('coach')" class="text-ios-blue underline font-semibold">KI-Coach</button> ein Foto oder tippe auf „+ Manuell“.
+            </p>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ======================================================= -->
+      <!-- TAB 2: KI-COACH (MULTIMODALER CHATBOT + FOTO-ANALYSE)   -->
+      <!-- ======================================================= -->
+      <section id="tab-coach" class="hidden animate-view flex flex-col">
+
+        <!-- Status-Leiste ob Live-Gemini oder Smart-Offline-Modus aktiv ist -->
+        <div class="glass-card px-4 py-2.5 mb-3 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span id="ai-mode-dot" class="w-2 h-2 rounded-full bg-ios-blue"></span>
+            <span id="ai-mode-label" class="text-xs font-semibold text-white">Smart-Coach aktiv</span>
+          </div>
+          <button
+            type="button"
+            onclick="switchTab('setup')"
+            id="ai-setup-shortcut"
+            class="text-[11px] font-semibold text-ios-blue hover:underline"
+          >
+            Gratis Gemini-Key für Fotos →
+          </button>
+        </div>
+
+        <!-- Chat-Nachrichten Verlauf -->
+        <div id="chat-messages" class="space-y-3.5 mb-4">
+          <!-- Nachrichten werden per JS gerendert -->
+        </div>
+
+        <!-- Bild-Vorschau, falls ein Foto ausgewählt wurde -->
+        <div id="chat-image-preview-box" class="hidden glass-card p-3 mb-3 flex items-center justify-between border-ios-blue/40">
+          <div class="flex items-center gap-3">
+            <img id="chat-image-preview" src="" alt="Essensvorschau" class="w-14 h-14 rounded-xl object-cover border border-white/15" />
+            <div>
+              <p class="text-xs font-bold text-white">Foto bereit zur Analyse</p>
+              <p class="text-[11px] text-ios-gray">KI erkennt Kalorien, Eiweiß & KH</p>
+            </div>
+          </div>
+          <button
+            id="remove-chat-image-btn"
+            type="button"
+            aria-label="Foto entfernen"
+            class="w-8 h-8 rounded-full bg-ios-input text-ios-gray hover:text-white flex items-center justify-center"
+          >
+            ✕
+          </button>
+        </div>
+
+        <!-- Schnellwahl-Chips -->
+        <div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2.5">
+          <button
+            type="button"
+            id="chip-photo-btn"
+            class="shrink-0 bg-ios-blue/20 border border-ios-blue/40 text-white text-xs font-semibold px-3.5 py-2 rounded-full active:scale-95 transition"
+          >
+            📸 Essen per Foto
+          </button>
+          <button
+            type="button"
+            data-prompt="3 Eier & Eiweißbrot"
+            class="quick-chip shrink-0 bg-ios-card border border-white/10 text-white text-xs font-medium px-3.5 py-2 rounded-full active:scale-95 transition"
+          >
+            🍳 3 Eier & Eiweißbrot
+          </button>
+          <button
+            type="button"
+            data-prompt="+4.000 Schritte"
+            class="quick-chip shrink-0 bg-ios-card border border-white/10 text-white text-xs font-medium px-3.5 py-2 rounded-full active:scale-95 transition"
+          >
+            🚶 +4.000 Schritte
+          </button>
+          <button
+            type="button"
+            data-prompt="Gewicht loggen"
+            class="quick-chip shrink-0 bg-ios-card border border-white/10 text-white text-xs font-medium px-3.5 py-2 rounded-full active:scale-95 transition"
+          >
+            ⚖️ Gewicht loggen
+          </button>
+          <button
+            type="button"
+            data-prompt="Was soll ich noch essen?"
+            class="quick-chip shrink-0 bg-ios-card border border-white/10 text-white text-xs font-medium px-3.5 py-2 rounded-full active:scale-95 transition"
+          >
+            💡 Was soll ich noch essen?
+          </button>
+        </div>
+
+        <!-- Chat Eingabefeld + Kamera/Foto Upload -->
+        <form id="chat-form" class="glass-card p-2 flex items-end gap-2">
+          <input
+            id="chat-file-input"
+            type="file"
+            accept="image/*"
+            class="hidden"
+          />
+
+          <button
+            id="chat-attach-btn"
+            type="button"
+            aria-label="Essensfoto aufnehmen oder wählen"
+            class="w-11 h-11 rounded-2xl bg-ios-input text-ios-blue flex items-center justify-center shrink-0 active:scale-95 transition"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" />
+            </svg>
+          </button>
+
+          <textarea
+            id="chat-input"
+            rows="1"
+            placeholder="Essen, Schritte, Gewicht oder Frage..."
+            class="flex-1 bg-transparent text-white placeholder-ios-gray text-base py-2.5 px-1.5 resize-none focus:outline-none max-h-28"
+          ></textarea>
+
+          <button
+            id="chat-send-btn"
+            type="submit"
+            aria-label="Nachricht senden"
+            class="w-11 h-11 rounded-2xl bg-ios-blue text-white flex items-center justify-center shrink-0 active:scale-95 transition shadow-lg shadow-ios-blue/25"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18" />
+            </svg>
+          </button>
+        </form>
+
+        <div class="flex justify-end mt-2">
+          <button id="clear-chat-btn" type="button" class="text-[11px] text-ios-gray hover:text-white py-1 px-2">
+            Chatverlauf leeren
+          </button>
+        </div>
+
+      </section>
+
+      <!-- ======================================================= -->
+      <!-- TAB 3: KÖRPER (SCHRITTE, GEWICHT & FORTSCHRITTSFOTOS)   -->
+      <!-- ======================================================= -->
+      <section id="tab-koerper" class="hidden animate-view space-y-4">
+
+        <!-- 1. Schritte-Tracker -->
+        <div class="glass-card p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="text-[11px] font-bold uppercase tracking-wider text-ios-amber">Aktivität</span>
+              <h2 class="text-lg font-bold text-white mt-0.5">Schritte heute</h2>
+            </div>
+            <span id="steps-bonus-badge" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-ios-amber/15 text-ios-amber num-tab">
+              +0 kcal Bonus
+            </span>
+          </div>
+
+          <div class="flex items-baseline justify-between">
+            <div>
+              <span id="steps-current-val" class="text-3xl font-extrabold num-tab text-white">0</span>
+              <span class="text-sm text-ios-gray num-tab"> / <span id="steps-target-val">10.000</span></span>
+            </div>
+            <span id="steps-pct-val" class="text-sm font-bold text-ios-amber num-tab">0%</span>
+          </div>
+
+          <!-- Fortschrittsbalken -->
+          <div class="w-full h-3 bg-ios-input rounded-full overflow-hidden">
+            <div id="steps-bar" class="h-full bg-ios-amber rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+
+          <!-- Schnell-Buttons & exakte Eingabe -->
+          <div class="grid grid-cols-2 gap-2.5">
+            <button
+              type="button"
+              data-add-steps="1000"
+              class="add-steps-btn bg-ios-input hover:bg-white/15 active:scale-95 transition text-white font-semibold text-sm py-3 rounded-xl border border-white/5"
+            >
+              +1.000 Schritte
+            </button>
+            <button
+              type="button"
+              data-add-steps="2500"
+              class="add-steps-btn bg-ios-input hover:bg-white/15 active:scale-95 transition text-white font-semibold text-sm py-3 rounded-xl border border-white/5"
+            >
+              +2.500 Schritte
+            </button>
+          </div>
+
+          <form id="steps-exact-form" class="flex items-center gap-2">
+            <input
+              id="steps-exact-input"
+              type="number"
+              inputmode="numeric"
+              min="0"
+              placeholder="Exakte Schrittzahl setzen..."
+              class="ios-input flex-1 px-3.5 py-2.5 num-tab"
+            />
+            <button
+              type="submit"
+              class="bg-ios-amber text-black font-bold text-xs px-4 py-3 rounded-xl active:scale-95 transition shrink-0"
+            >
+              Setzen
+            </button>
+          </form>
+        </div>
+
+        <!-- 2. Gewichts-Tracker + SVG-Liniendiagramm -->
+        <div class="glass-card p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="text-[11px] font-bold uppercase tracking-wider text-ios-blue">Körpergewicht</span>
+              <h2 class="text-lg font-bold text-white mt-0.5">Gewichtsverlauf</h2>
+            </div>
+            <span id="weight-diff-badge" class="text-xs font-bold px-2.5 py-1 rounded-full bg-ios-emerald/15 text-ios-emerald num-tab">
+              0,0 kg
+            </span>
+          </div>
+
+          <!-- Kennzahlen: Start vs. Aktuell -->
+          <div class="grid grid-cols-2 gap-3">
+            <div class="bg-[#090A0F]/60 rounded-2xl p-3 border border-white/[0.05]">
+              <p class="text-[11px] text-ios-gray">Startgewicht</p>
+              <p id="weight-start-val" class="text-lg font-bold text-white num-tab mt-0.5">-- kg</p>
+            </div>
+            <div class="bg-[#090A0F]/60 rounded-2xl p-3 border border-white/[0.05]">
+              <p class="text-[11px] text-ios-gray">Aktuell</p>
+              <p id="weight-current-val" class="text-lg font-bold text-ios-blue num-tab mt-0.5">-- kg</p>
+            </div>
+          </div>
+
+          <!-- SVG Liniendiagramm -->
+          <div class="bg-[#090A0F]/60 rounded-2xl p-3 border border-white/[0.05]">
+            <svg id="weight-chart-svg" class="w-full h-40 overflow-visible" viewBox="0 0 320 140">
+              <!-- Wird dynamisch per JS gezeichnet -->
+            </svg>
+          </div>
+
+          <!-- Neues Gewicht eintragen -->
+          <form id="weight-form" class="flex items-center gap-2">
+            <input
+              id="weight-input"
+              type="text"
+              inputmode="decimal"
+              placeholder="z.B. 89,5 kg"
+              class="ios-input flex-1 px-3.5 py-2.5 num-tab"
+            />
+            <button
+              type="submit"
+              class="bg-ios-blue text-white font-bold text-xs px-4 py-3 rounded-xl active:scale-95 transition shrink-0"
+            >
+              Eintragen
+            </button>
+          </form>
+        </div>
+
+        <!-- 3. Fortschrittsfotos Galerie -->
+        <div class="glass-card p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="text-[11px] font-bold uppercase tracking-wider text-ios-emerald">Transformation</span>
+              <h2 class="text-lg font-bold text-white mt-0.5">Fortschrittsfotos</h2>
+            </div>
+            <label class="bg-ios-blue text-white font-bold text-xs px-3.5 py-2 rounded-xl active:scale-95 transition cursor-pointer shadow-lg shadow-ios-blue/25">
+              + Form-Foto
+              <input id="progress-photo-input" type="file" accept="image/*" class="hidden" />
+            </label>
+          </div>
+
+          <div id="progress-photos-grid" class="grid grid-cols-2 gap-3">
+            <!-- Fotos werden dynamisch gerendert -->
+          </div>
+
+          <div id="progress-photos-empty" class="py-7 px-4 text-center bg-[#090A0F]/45 rounded-2xl border border-dashed border-white/10">
+            <p class="text-sm font-semibold text-white">Noch keine Fortschrittsfotos</p>
+            <p class="text-xs text-ios-gray mt-1">Halte deine Form mit Datum und aktuellem Gewicht fest.</p>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ======================================================= -->
+      <!-- TAB 4: SETUP (DEXCOM G7 SYNC, ZIELE, GEMINI KEY & DATA) -->
+      <!-- ======================================================= -->
+      <section id="tab-setup" class="hidden animate-view space-y-4">
+
+        <!-- 1. AUTOMATISCHE DEXCOM G7 SYNCHRONISATION (2 GRATIS-WEGE) -->
+        <div class="glass-card p-5 space-y-4 border-ios-emerald/30">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <span class="text-[11px] font-bold uppercase tracking-wider text-ios-emerald">Automatischer Blutzucker</span>
+              <h2 class="text-lg font-bold text-white mt-0.5">Dexcom G7 Live-Sync</h2>
+            </div>
+            <span class="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-ios-emerald/15 text-ios-emerald">
+              0 € Setup
+            </span>
+          </div>
+
+          <!-- Methode B: Live-Feed URL (Cloudflare Worker / Nightscout) -->
+          <div class="bg-[#090A0F]/65 rounded-2xl p-4 border border-white/[0.06] space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-white">Methode 1: Dexcom Live-Feed URL</span>
+              <span class="text-[10px] font-semibold text-ios-emerald bg-ios-emerald/10 px-2 py-0.5 rounded-md">Vollautomatisch</span>
+            </div>
+
+            <p class="text-xs text-ios-gray leading-relaxed">
+              Verbinde deine kostenlose Dexcom Share Proxy-URL (Cloudflare Worker) oder Nightscout-URL (<code class="text-ios-cyan">/api/v1/entries.json</code>).
+            </p>
+
+            <div>
+              <label for="setup-dexcom-feed-url" class="block text-[11px] font-semibold text-ios-gray mb-1">
+                Live-Feed URL
+              </label>
+              <input
+                id="setup-dexcom-feed-url"
+                type="url"
+                placeholder="https://dexcom-sync.dein-name.workers.dev"
+                autocomplete="off"
+                class="ios-input w-full px-3.5 py-2.5 text-sm"
+              />
+            </div>
+
+            <!-- Auto-Sync alle 5 Min. Toggle + Jetzt abrufen Button -->
+            <div class="flex items-center justify-between gap-2 pt-1">
+              <label class="flex items-center gap-2.5 cursor-pointer select-none">
+                <input
+                  id="setup-dexcom-autosync"
+                  type="checkbox"
+                  class="accent-ios-emerald w-4 h-4 rounded"
+                />
+                <span class="text-xs font-semibold text-white">Auto-Sync alle 5 Min.</span>
+              </label>
+
+              <button
+                id="test-dexcom-feed-btn"
+                type="button"
+                class="bg-ios-emerald text-black font-bold text-xs px-3.5 py-2 rounded-xl active:scale-95 transition shrink-0"
+              >
+                Jetzt abrufen
+              </button>
+            </div>
+
+            <!-- Live-Feedback Status-Banner -->
+            <div id="dexcom-feed-feedback" class="hidden rounded-xl px-3 py-2 text-xs font-medium bg-ios-input border border-white/10 text-ios-gray">
+              Bereit zum Abrufen.
+            </div>
+
+            <!-- Ausklappbarer Drawer: Cloudflare Worker Proxy-Code für Dexcom Share EU -->
+            <div class="pt-1 border-t border-white/[0.06]">
+              <button
+                id="toggle-worker-drawer-btn"
+                type="button"
+                aria-expanded="false"
+                class="w-full flex items-center justify-between text-left py-1.5 text-xs font-semibold text-ios-blue"
+              >
+                <span>🛠️ Gratis Dexcom Share EU Proxy (Cloudflare Worker Code)</span>
+                <span id="worker-drawer-chevron" class="transition-transform duration-200">▼</span>
+              </button>
+
+              <div id="worker-drawer-content" class="hidden mt-2.5 space-y-2.5">
+                <div class="text-[11px] text-ios-gray space-y-1 leading-relaxed bg-black/40 p-3 rounded-xl border border-white/5">
+                  <p class="text-white font-semibold">So richtest du den Dexcom G7 Server in 2 Min. gratis ein:</p>
+                  <p>1. In der <strong class="text-white">Dexcom G7 App</strong> unter <em>Verbindungen → Share</em> einen Follower einladen (deine E-Mail).</p>
+                  <p>2. Auf <strong class="text-white">dash.cloudflare.com</strong> kostenlos anmelden → <em>Workers &amp; Pages → Create Worker</em>.</p>
+                  <p>3. Diesen Code einfügen, oben deinen Dexcom-Benutzernamen &amp; Passwort eintragen und auf <strong class="text-white">Deploy</strong> klicken.</p>
+                  <p>4. Die <code class="text-ios-cyan">*.workers.dev</code> URL oben als Live-Feed URL speichern!</p>
+                </div>
+
+                <div class="relative">
+                  <pre id="cloudflare-worker-code" class="bg-[#06070A] text-ios-cyan text-[10px] leading-relaxed p-3 rounded-xl border border-white/10 overflow-x-auto font-mono select-all">// Cloudflare Worker Proxy für Dexcom Share EU (shareous1.dexcom.com)
+const DEXCOM_USER = "DEIN_DEXCOM_BENUTZERNAME";
+const DEXCOM_PASS = "DEIN_DEXCOM_PASSWORT";
+const DEXCOM_APP_ID = "d8665ade-9673-4e27-9ff6-92db4ce13d13"; // Dexcom EU App ID
+
+export default {
+  async fetch(request) {
+    const cors = {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
+      "Content-Type": "application/json"
+    };
+    if (request.method === "OPTIONS") return new Response(null, { headers: cors });
+
+    try {
+      const base = "https://shareous1.dexcom.com/ShareWebServices/Services";
+      // 1. Account ID abrufen
+      const authRes = await fetch(`${base}/General/AuthenticatePublisherAccount`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          accountName: DEXCOM_USER,
+          password: DEXCOM_PASS,
+          applicationId: DEXCOM_APP_ID
+        })
+      });
+      const accountId = await authRes.json();
+
+      // 2. Session ID abrufen
+      const loginRes = await fetch(`${base}/General/LoginPublisherAccountById`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          accountId,
+          password: DEXCOM_PASS,
+          applicationId: DEXCOM_APP_ID
+        })
+      });
+      const sessionId = await loginRes.json();
+
+      // 3. Aktuellsten Dexcom G7 Wert abrufen
+      const readRes = await fetch(
+        `${base}/Publisher/ReadPublisherLatestGlucoseValues?sessionId=${sessionId}&minutes=1440&maxCount=1`,
+        { method: "POST", headers: { "Content-Type": "application/json" } }
+      );
+      const entries = await readRes.json();
+      const latest = entries?.[0];
+
+      if (!latest) {
+        return new Response(JSON.stringify({ error: "Keine aktuellen Werte" }), { status: 404, headers: cors });
+      }
+
+      const timestamp = parseInt(String(latest.WT).replace(/\D/g, ""), 10) || Date.now();
+      return new Response(
+        JSON.stringify({
+          sgv: latest.Value,
+          trend: latest.Trend,
+          date: timestamp
+        }),
+        { headers: cors }
+      );
+    } catch (err) {
+      return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: cors });
+    }
+  }
+};</pre>
+                  <button
+                    id="copy-worker-code-btn"
+                    type="button"
+                    class="mt-2 w-full bg-ios-input hover:bg-white/15 text-white font-bold text-xs py-2.5 rounded-xl border border-white/10 active:scale-95 transition"
+                  >
+                    📋 Cloudflare Worker-Code kopieren
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Methode A: iOS Apple Health / Kurzbefehle URL Auto-Import -->
+          <div class="bg-[#090A0F]/65 rounded-2xl p-4 border border-white/[0.06] space-y-2.5">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-white flex items-center gap-1.5">
+                <span></span> Methode 2: iPhone Kurzbefehl (Apple Health)
+              </span>
+              <button
+                id="copy-shortcut-url-btn"
+                type="button"
+                class="text-[11px] font-semibold text-ios-blue bg-ios-blue/15 px-2.5 py-1 rounded-lg active:scale-95 transition"
+              >
+                URL kopieren
+              </button>
+            </div>
+            <p class="text-[11px] text-ios-gray leading-relaxed">
+              Dexcom G7 schreibt deinen Blutzucker direkt in <strong class="text-white">Apple Health</strong>. Erstelle in der iPhone <strong class="text-white">Kurzbefehle-App</strong> einen Kurzbefehl, der Blutzucker &amp; Schritte aus Health liest und diese URL öffnet:
+            </p>
+            <code class="block text-[10px] text-ios-cyan bg-black/50 px-2.5 py-2 rounded-xl border border-white/5 overflow-x-auto">
+              ?bz=118&amp;trend=Flat&amp;steps=8500&amp;weight=89.5
+            </code>
+          </div>
+        </div>
+
+        <!-- 2. Kostenloser KI-Key (Google AI Studio) -->
+        <div class="glass-card p-5 space-y-4">
+          <div>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-ios-blue">100 % Gratis KI-Power</span>
+            <h2 class="text-lg font-bold text-white mt-0.5">Google Gemini API-Key</h2>
+          </div>
+
+          <div class="bg-[#090A0F]/60 rounded-2xl p-3.5 border border-white/[0.06] space-y-1 text-xs text-ios-gray leading-relaxed">
+            <p class="text-white font-semibold">Kostenlosen Key in 30 Sek. erstellen:</p>
+            <p>1. <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" class="text-ios-blue underline font-semibold">aistudio.google.com</a> öffnen → <strong class="text-white">„Create API key“</strong></p>
+            <p>2. Key hier speichern – ermöglicht Foto-Erkennung für jedes Gericht!</p>
+          </div>
+
+          <div class="space-y-2.5">
+            <div class="relative">
+              <input
+                id="setup-api-key"
+                type="password"
+                placeholder="AIzaSy..."
+                autocomplete="off"
+                class="ios-input w-full px-3.5 py-3 pr-20"
+              />
+              <button
+                id="toggle-api-key-vis"
+                type="button"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-ios-gray hover:text-white px-2 py-1"
+              >
+                Anzeigen
+              </button>
+            </div>
+
+            <div class="flex gap-2">
+              <button
+                id="save-api-key-btn"
+                type="button"
+                class="flex-1 bg-ios-blue text-white font-bold text-xs py-3 rounded-xl active:scale-95 transition"
+              >
+                Key speichern
+              </button>
+              <button
+                id="test-api-key-btn"
+                type="button"
+                class="bg-ios-input text-white font-semibold text-xs px-4 py-3 rounded-xl border border-white/10 active:scale-95 transition"
+              >
+                Testen
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Diabetes-Parameter (Omnipod 5 & Dexcom G7) -->
+        <div class="glass-card p-5 space-y-4">
+          <div>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-ios-cyan">Typ-1-Diabetes</span>
+            <h2 class="text-lg font-bold text-white mt-0.5">Omnipod 5 Parameter</h2>
+          </div>
+
+          <div class="space-y-3">
+            <div>
+              <label for="setup-ke-factor" class="block text-xs font-semibold text-ios-gray mb-1">
+                KH-Faktor (IE pro 10g Kohlenhydrate)
+              </label>
+              <input id="setup-ke-factor" type="number" step="0.1" min="0.1" class="ios-input w-full px-3.5 py-2.5 num-tab" />
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label for="setup-target-bz" class="block text-xs font-semibold text-ios-gray mb-1">
+                  Ziel-Blutzucker (mg/dL)
+                </label>
+                <input id="setup-target-bz" type="number" step="1" min="70" max="180" class="ios-input w-full px-3.5 py-2.5 num-tab" />
+              </div>
+
+              <div>
+                <label for="setup-isf" class="block text-xs font-semibold text-ios-gray mb-1">
+                  Korrekturfaktor (mg/dL / IE)
+                </label>
+                <input id="setup-isf" type="number" step="1" min="5" max="200" class="ios-input w-full px-3.5 py-2.5 num-tab" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. Persönliche Fitness- & Diät-Ziele -->
+        <div class="glass-card p-5 space-y-4">
+          <div>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-ios-emerald">Kaloriendefizit</span>
+            <h2 class="text-lg font-bold text-white mt-0.5">Persönliche Tagesziele</h2>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label for="setup-cal-goal" class="block text-xs font-semibold text-ios-gray mb-1">
+                Kalorienziel (kcal)
+              </label>
+              <input id="setup-cal-goal" type="number" step="10" min="800" class="ios-input w-full px-3.5 py-2.5 num-tab" />
+            </div>
+
+            <div>
+              <label for="setup-steps-goal" class="block text-xs font-semibold text-ios-gray mb-1">
+                Schritte-Ziel
+              </label>
+              <input id="setup-steps-goal" type="number" step="500" min="1000" class="ios-input w-full px-3.5 py-2.5 num-tab" />
+            </div>
+
+            <div>
+              <label for="setup-protein-goal" class="block text-xs font-semibold text-ios-gray mb-1">
+                Eiweiß-Ziel (g)
+              </label>
+              <input id="setup-protein-goal" type="number" step="5" min="30" class="ios-input w-full px-3.5 py-2.5 num-tab" />
+            </div>
+
+            <div>
+              <label for="setup-carbs-goal" class="block text-xs font-semibold text-ios-gray mb-1">
+                Kohlenhydrate-Ziel (g)
+              </label>
+              <input id="setup-carbs-goal" type="number" step="5" min="10" class="ios-input w-full px-3.5 py-2.5 num-tab" />
+            </div>
+
+            <div>
+              <label for="setup-fat-goal" class="block text-xs font-semibold text-ios-gray mb-1">
+                Fett-Ziel (g)
+              </label>
+              <input id="setup-fat-goal" type="number" step="5" min="15" class="ios-input w-full px-3.5 py-2.5 num-tab" />
+            </div>
+
+            <div>
+              <label for="setup-start-weight" class="block text-xs font-semibold text-ios-gray mb-1">
+                Startgewicht (kg)
+              </label>
+              <input id="setup-start-weight" type="text" inputmode="decimal" class="ios-input w-full px-3.5 py-2.5 num-tab" />
+            </div>
+          </div>
+
+          <button
+            id="save-settings-btn"
+            type="button"
+            class="w-full bg-ios-emerald text-black font-bold text-sm py-3.5 rounded-xl active:scale-95 transition shadow-lg shadow-ios-emerald/20"
+          >
+            Alle Einstellungen speichern
+          </button>
+        </div>
+
+        <!-- 5. Datensicherung (Backup Export & Import) -->
+        <div class="glass-card p-5 space-y-3">
+          <div>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-ios-gray">Sicherheit</span>
+            <h2 class="text-lg font-bold text-white mt-0.5">Datensicherung</h2>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2.5">
+            <button
+              id="export-backup-btn"
+              type="button"
+              class="bg-ios-input text-white font-semibold text-xs py-3 px-3 rounded-xl border border-white/10 active:scale-95 transition"
+            >
+              Backup exportieren (JSON)
+            </button>
+
+            <label class="bg-ios-input text-white font-semibold text-xs py-3 px-3 rounded-xl border border-white/10 active:scale-95 transition text-center cursor-pointer flex items-center justify-center">
+              Backup importieren
+              <input id="import-backup-input" type="file" accept=".json,application/json" class="hidden" />
+            </label>
+          </div>
+
+          <button
+            id="reset-all-data-btn"
+            type="button"
+            class="w-full text-xs font-semibold text-ios-red bg-ios-red/10 py-2.5 rounded-xl active:scale-95 transition"
+          >
+            Alle App-Daten zurücksetzen
+          </button>
+        </div>
+
+      </section>
+
+    </main>
+
+    <!-- ========================================================= -->
+    <!-- MODALS (ERSETZEN ALERT / PROMPT / CONFIRM)                -->
+    <!-- ========================================================= -->
+
+    <!-- Modal 1: Blutzucker manuell überschreiben -->
+    <div id="bz-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-end sm:items-center justify-center p-4">
+      <div class="glass-card w-full max-w-md p-5 space-y-4 animate-view">
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-bold text-white">Dexcom G7 Wert setzen</h3>
+          <button type="button" onclick="closeModal('bz-modal')" class="w-8 h-8 rounded-full bg-ios-input text-ios-gray flex items-center justify-center">✕</button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label for="modal-bz-input" class="block text-xs text-ios-gray mb-1">Blutzucker (mg/dL)</label>
+            <input id="modal-bz-input" type="number" inputmode="numeric" min="20" max="600" class="ios-input w-full px-3.5 py-3 text-xl font-bold num-tab" />
+          </div>
+          <div>
+            <label for="modal-bz-trend" class="block text-xs text-ios-gray mb-1">Trendpfeil</label>
+            <select id="modal-bz-trend" class="ios-input w-full px-3.5 py-3 text-xl font-bold">
+              <option value="↓↓">↓↓</option>
+              <option value="↓">↓</option>
+              <option value="↘">↘</option>
+              <option value="→">→</option>
+              <option value="↗">↗</option>
+              <option value="↑">↑</option>
+              <option value="↑↑">↑↑</option>
+            </select>
+          </div>
+        </div>
+
+        <button
+          id="save-bz-modal-btn"
+          type="button"
+          class="w-full bg-ios-blue text-white font-bold text-sm py-3.5 rounded-xl active:scale-95 transition"
+        >
+          Blutzucker aktualisieren
+        </button>
+      </div>
+    </div>
+
+    <!-- Modal 2: Mahlzeit manuell eintragen -->
+    <div id="meal-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-end sm:items-center justify-center p-4">
+      <form id="manual-meal-form" class="glass-card w-full max-w-md p-5 space-y-4 animate-view">
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-bold text-white">Mahlzeit eintragen</h3>
+          <button type="button" onclick="closeModal('meal-modal')" class="w-8 h-8 rounded-full bg-ios-input text-ios-gray flex items-center justify-center">✕</button>
+        </div>
+
+        <div>
+          <label for="meal-name-input" class="block text-xs text-ios-gray mb-1">Name der Mahlzeit</label>
+          <input id="meal-name-input" type="text" required placeholder="z.B. Hähnchen mit Reis & Brokkoli" class="ios-input w-full px-3.5 py-2.5" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label for="meal-cal-input" class="block text-xs text-ios-gray mb-1">Kalorien (kcal)</label>
+            <input id="meal-cal-input" type="number" inputmode="numeric" min="0" required placeholder="550" class="ios-input w-full px-3.5 py-2.5 num-tab" />
+          </div>
+          <div>
+            <label for="meal-protein-input" class="block text-xs text-ios-emerald mb-1">Eiweiß (g)</label>
+            <input id="meal-protein-input" type="number" inputmode="decimal" min="0" step="0.5" placeholder="45" class="ios-input w-full px-3.5 py-2.5 num-tab" />
+          </div>
+          <div>
+            <label for="meal-carbs-input" class="block text-xs text-ios-blue mb-1">Kohlenhydrate (g)</label>
+            <input id="meal-carbs-input" type="number" inputmode="decimal" min="0" step="0.5" placeholder="50" class="ios-input w-full px-3.5 py-2.5 num-tab" />
+          </div>
+          <div>
+            <label for="meal-fat-input" class="block text-xs text-ios-amber mb-1">Fett (g)</label>
+            <input id="meal-fat-input" type="number" inputmode="decimal" min="0" step="0.5" placeholder="12" class="ios-input w-full px-3.5 py-2.5 num-tab" />
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          class="w-full bg-ios-emerald text-black font-bold text-sm py-3.5 rounded-xl active:scale-95 transition"
+        >
+          Ins Tagebuch speichern
+        </button>
+      </form>
+    </div>
+
+    <!-- Modal 3: Vollbild-Ansicht für Fortschrittsfoto -->
+    <div id="photo-viewer-modal" class="hidden fixed inset-0 z-50 bg-black/90 backdrop-blur-xl flex flex-col items-center justify-center p-4">
+      <div class="w-full max-w-md space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <p id="viewer-photo-date" class="text-sm font-bold text-white">Datum</p>
+            <p id="viewer-photo-weight" class="text-xs text-ios-blue font-semibold">Gewicht</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="viewer-delete-photo-btn" type="button" class="text-xs font-semibold text-ios-red bg-ios-red/15 px-3 py-2 rounded-xl">
+              Löschen
+            </button>
+            <button type="button" onclick="closeModal('photo-viewer-modal')" class="w-9 h-9 rounded-full bg-ios-input text-white flex items-center justify-center">
+              ✕
+            </button>
+          </div>
+        </div>
+        <img id="viewer-photo-img" src="" alt="Fortschrittsfoto" class="w-full max-h-[70vh] object-contain rounded-2xl border border-white/10 bg-ios-card" />
+      </div>
+    </div>
+
+    <!-- Modal 4: Bestätigungs-Dialog (ersetzt window.confirm) -->
+    <div id="confirm-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+      <div class="glass-card w-full max-w-sm p-5 space-y-4 text-center animate-view">
+        <h3 id="confirm-modal-title" class="text-lg font-bold text-white">Bestätigen</h3>
+        <p id="confirm-modal-desc" class="text-xs text-ios-gray leading-relaxed">Möchtest du das wirklich tun?</p>
+        <div class="grid grid-cols-2 gap-2.5 pt-1">
+          <button type="button" onclick="closeModal('confirm-modal')" class="bg-ios-input text-white font-semibold text-xs py-3 rounded-xl">
+            Abbrechen
+          </button>
+          <button id="confirm-modal-yes-btn" type="button" class="bg-ios-red text-white font-bold text-xs py-3 rounded-xl">
+            Ja, ausführen
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- JAVASCRIPT APPLIKATIONS-LOGIK                             -->
+  <!-- ========================================================= -->
+  <script>
+    const STORAGE_KEY = 'glucofit_ai_state_v2';
+    const STEP_CAL_FACTOR = 0.035; // ~35 kcal pro 1.000 Schritte
+
+    // Hilfsfunktion: Heutiges Datum als YYYY-MM-DD in lokaler Zeitzone
+    function getTodayKey() {
+      const d = new Date();
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    function formatGermanDate(isoDateStr) {
+      const parts = String(isoDateStr || '').split('-');
+      if (parts.length !== 3) return isoDateStr;
+      return `${parts[2]}.${parts[1]}.${parts[0]}`;
+    }
+
+    function formatNumberDE(num, decimals = 0) {
+      return Number(num || 0).toLocaleString('de-DE', {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+      });
+    }
+
+    // Normalisiert Dexcom-Trendpfeile (Unicode, Dexcom Strings wie "Flat"/"FortyFiveUp", Zahlen 1-7)
+    function normalizeDexcomTrend(rawTrend) {
+      if (rawTrend === null || rawTrend === undefined) return '→';
+      const val = String(rawTrend).trim();
+      const validArrows = ['↑↑', '↑', '↗', '→', '↘', '↓', '↓↓'];
+      if (validArrows.includes(val)) return val;
+
+      const map = {
+        '1': '↑↑',
+        'doubleup': '↑↑',
+        '2': '↑',
+        'singleup': '↑',
+        '3': '↗',
+        'fortyfiveup': '↗',
+        '4': '→',
+        'flat': '→',
+        '5': '↘',
+        'fortyfivedown': '↘',
+        '6': '↓',
+        'singledown': '↓',
+        '7': '↓↓',
+        'doubledown': '↓↓',
+        'none': '→',
+        'notcomputable': '→',
+        'rateoutofrange': '→'
+      };
+
+      return map[val.toLowerCase()] || '→';
+    }
+
+    // Formatiert relativen Sync-Zeitstempel ("Live · gerade eben" / "Live · vor 2 Min.")
+    function formatRelativeSyncTime(timestampMs, sourceLabel = '') {
+      if (!timestampMs) return 'Live · gerade eben';
+      const diffSec = Math.max(0, Math.floor((Date.now() - timestampMs) / 1000));
+      let rel = 'gerade eben';
+      if (diffSec >= 60 && diffSec < 3600) {
+        const mins = Math.floor(diffSec / 60);
+        rel = `vor ${mins} Min.`;
+      } else if (diffSec >= 3600) {
+        const hrs = Math.floor(diffSec / 3600);
+        rel = `vor ${hrs} Std.`;
+      }
+      return sourceLabel ? `${sourceLabel} · ${rel}` : `Live · ${rel}`;
+    }
+
+    // Standard-Zustand der App
+    function getDefaultState() {
+      const today = getTodayKey();
+      return {
+        settings: {
+          calGoal: 2200,
+          proteinGoal: 180,
+          carbsGoal: 200,
+          fatGoal: 65,
+          stepsGoal: 10000,
+          startWeight: 90.0,
+          keFactor: 2.2,     // IE pro 10g Kohlenhydrate
+          targetBz: 110,     // mg/dL
+          isf: 35,           // mg/dL Korrektur pro 1 IE
+          apiKey: '',
+          dexcomFeedUrl: '',
+          dexcomAutoSync: true
+        },
+        glucose: {
+          value: 118,
+          trend: '→',
+          lastSyncTimestamp: Date.now(),
+          syncSource: 'Live'
+        },
+        daily: {
+          [today]: {
+            steps: 0,
+            meals: []
+          }
+        },
+        weightHistory: [
+          { date: today, weight: 89.5 }
+        ],
+        progressPhotos: [],
+        chatHistory: [
+          {
+            id: 'welcome-1',
+            role: 'assistant',
+            text: 'Hey Bro! 👋 Ich bin dein persönlicher GlucoFit AI Coach. Dein Dexcom G7 Wert ist direkt oben verknüpft. Schick mir ein Foto von deinem Essen oder schreib mir deine Mahlzeit, Schritte oder dein Gewicht – ich rechne alles für dein Kaloriendefizit und deinen Omnipod 5 aus!',
+            action: null,
+            applied: false
+          }
+        ]
+      };
+    }
+
+    // Zustand aus localStorage laden & sicher zusammenführen
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return getDefaultState();
+        const parsed = JSON.parse(raw);
+        const def = getDefaultState();
+        const today = getTodayKey();
+
+        const merged = {
+          settings: { ...def.settings, ...(parsed.settings || {}) },
+          glucose: { ...def.glucose, ...(parsed.glucose || {}) },
+          daily: parsed.daily || {},
+          weightHistory: Array.isArray(parsed.weightHistory) ? parsed.weightHistory : def.weightHistory,
+          progressPhotos: Array.isArray(parsed.progressPhotos) ? parsed.progressPhotos : [],
+          chatHistory: Array.isArray(parsed.chatHistory) && parsed.chatHistory.length > 0 ? parsed.chatHistory : def.chatHistory
+        };
+
+        if (!merged.daily[today]) {
+          merged.daily[today] = { steps: 0, meals: [] };
+        }
+        return merged;
+      } catch (err) {
+        return getDefaultState();
+      }
+    }
+
+    let appState = loadState();
+
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+      } catch (err) {
+        showToast('Speicher voll – bitte alte Fotos löschen', 'red');
+      }
+    }
+
+    function getTodayData() {
+      const today = getTodayKey();
+      if (!appState.daily[today]) {
+        appState.daily[today] = { steps: 0, meals: [] };
+      }
+      return appState.daily[today];
+    }
+
+    // =========================================================
+    // TOAST & MODAL HILFSFUNKTIONEN (KEIN ALERT/CONFIRM)
+    // =========================================================
+    let toastTimeout = null;
+    function showToast(message, color = 'emerald') {
+      const container = document.getElementById('toast-container');
+      const dot = document.getElementById('toast-dot');
+      const msg = document.getElementById('toast-msg');
+
+      dot.className = 'w-2.5 h-2.5 rounded-full shrink-0 ';
+      if (color === 'red') dot.className += 'bg-ios-red';
+      else if (color === 'blue') dot.className += 'bg-ios-blue';
+      else if (color === 'amber') dot.className += 'bg-ios-amber';
+      else dot.className += 'bg-ios-emerald';
+
+      msg.textContent = message;
+      container.classList.remove('opacity-0', '-translate-y-2');
+      container.classList.add('opacity-100', 'translate-y-0');
+
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        container.classList.add('opacity-0', '-translate-y-2');
+        container.classList.remove('opacity-100', 'translate-y-0');
+      }, 2800);
+    }
+
+    function openModal(id) {
+      document.getElementById(id).classList.remove('hidden');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+    }
+
+    let confirmCallback = null;
+    function showConfirmDialog(title, desc, onYes) {
+      document.getElementById('confirm-modal-title').textContent = title;
+      document.getElementById('confirm-modal-desc').textContent = desc;
+      confirmCallback = onYes;
+      openModal('confirm-modal');
+    }
+
+    document.getElementById('confirm-modal-yes-btn').addEventListener('click', () => {
+      closeModal('confirm-modal');
+      if (typeof confirmCallback === 'function') {
+        confirmCallback();
+      }
+    });
+
+    // =========================================================
+    // DEXCOM G7 AUTO-SYNC METHODE A: URL / APPLE KURZBEFEHLE
+    // =========================================================
+    function handleUrlParameters(silent = false) {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const bzParam = params.get('bz') ?? params.get('glucose') ?? params.get('sgv');
+        const trendParam = params.get('trend') ?? params.get('direction');
+        const stepsParam = params.get('steps');
+        const weightParam = params.get('weight');
+        const syncedItems = [];
+
+        if (bzParam !== null && bzParam.trim() !== '' && !isNaN(Number(bzParam))) {
+          const bz = Math.min(600, Math.max(20, Math.round(Number(bzParam))));
+          const arrow = trendParam ? normalizeDexcomTrend(trendParam) : appState.glucose.trend;
+          appState.glucose.value = bz;
+          appState.glucose.trend = arrow;
+          appState.glucose.lastSyncTimestamp = Date.now();
+          appState.glucose.syncSource = 'Kurzbefehl';
+          syncedItems.push(`BZ ${bz} mg/dL ${arrow}`);
+        }
+
+        if (stepsParam !== null && stepsParam.trim() !== '' && !isNaN(Number(stepsParam))) {
+          const steps = Math.max(0, Math.round(Number(stepsParam)));
+          getTodayData().steps = steps;
+          syncedItems.push(`${formatNumberDE(steps)} Schritte`);
+        }
+
+        if (weightParam !== null && weightParam.trim() !== '') {
+          const parsedW = parseFloat(weightParam.replace(',', '.'));
+          if (!isNaN(parsedW) && parsedW >= 25 && parsedW <= 350) {
+            const roundedW = Math.round(parsedW * 10) / 10;
+            addWeightEntry(roundedW);
+            syncedItems.push(`${formatNumberDE(roundedW, 1)} kg`);
+          }
+        }
+
+        if (syncedItems.length > 0) {
+          saveState();
+          // URL bereinigen, damit ein Refresh keine veralteten Werte wiederholt
+          window.history.replaceState({}, document.title, window.location.pathname);
+          renderAll();
+          if (!silent) {
+            setTimeout(() => {
+              showToast(`Auto-Import: ${syncedItems.join(' • ')}`, 'emerald');
+            }, 250);
+          }
+          return true;
+        }
+      } catch (e) {
+        // Ignorieren falls URL-Zugriff eingeschränkt
+      }
+      return false;
+    }
+
+    // =========================================================
+    // DEXCOM G7 AUTO-SYNC METHODE B: LIVE-FEED URL (5-MIN-POLL)
+    // =========================================================
+    let isFetchingDexcomFeed = false;
+    let dexcomPollIntervalId = null;
+
+    function updateDexcomFeedFeedback(text, type = 'neutral') {
+      const box = document.getElementById('dexcom-feed-feedback');
+      if (!box) return;
+      box.classList.remove('hidden');
+      box.textContent = text;
+      if (type === 'success') {
+        box.className = 'rounded-xl px-3 py-2 text-xs font-semibold bg-ios-emerald/15 border border-ios-emerald/30 text-ios-emerald';
+      } else if (type === 'error') {
+        box.className = 'rounded-xl px-3 py-2 text-xs font-semibold bg-ios-red/15 border border-ios-red/30 text-ios-red';
+      } else {
+        box.className = 'rounded-xl px-3 py-2 text-xs font-medium bg-ios-input border border-white/10 text-ios-gray';
+      }
+    }
+
+    async function fetchDexcomLiveFeed(manualTrigger = false) {
+      const feedUrl = (appState.settings.dexcomFeedUrl || '').trim();
+      if (!feedUrl) {
+        if (manualTrigger) {
+          updateDexcomFeedFeedback('Bitte zuerst eine Live-Feed URL eingeben.', 'error');
+          showToast('Keine Live-Feed URL hinterlegt', 'red');
+        }
+        return false;
+      }
+
+      if (isFetchingDexcomFeed) return false;
+      isFetchingDexcomFeed = true;
+
+      if (manualTrigger) {
+        updateDexcomFeedFeedback('Rufe aktuellen Dexcom G7 Wert ab...', 'neutral');
+      }
+
+      try {
+        const response = await fetch(feedUrl, {
+          method: 'GET',
+          headers: { 'Accept': 'application/json' },
+          cache: 'no-store'
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        // Unterstützt Nightscout Array ([{ sgv, direction, date }]) & Proxy Objekt ({ sgv, trend, date })
+        const entry = Array.isArray(data) ? data[0] : data;
+
+        if (!entry) {
+          throw new Error('Keine Einträge im Feed gefunden');
+        }
+
+        const rawSgv = entry.sgv ?? entry.Value ?? entry.mbg ?? entry.bz;
+        const parsedSgv = Math.round(Number(rawSgv));
+        if (isNaN(parsedSgv) || parsedSgv < 20 || parsedSgv > 600) {
+          throw new Error('Ungültiger Blutzuckerwert im Feed');
+        }
+
+        const rawTrend = entry.trend ?? entry.direction ?? entry.Trend ?? 'Flat';
+        const arrow = normalizeDexcomTrend(rawTrend);
+
+        let syncTs = Date.now();
+        if (entry.date) {
+          const parsedDate = typeof entry.date === 'number' ? entry.date : Date.parse(entry.date);
+          if (!isNaN(parsedDate) && parsedDate > 1000000000000) {
+            syncTs = parsedDate;
+          }
+        }
+
+        appState.glucose.value = parsedSgv;
+        appState.glucose.trend = arrow;
+        appState.glucose.lastSyncTimestamp = syncTs;
+        appState.glucose.syncSource = 'Dexcom Feed';
+
+        saveState();
+        renderDashboard();
+
+        const feedbackText = `✓ Synchronisiert: ${parsedSgv} mg/dL ${arrow} (${formatRelativeSyncTime(syncTs, 'Live')})`;
+        updateDexcomFeedFeedback(feedbackText, 'success');
+
+        if (manualTrigger) {
+          showToast(`Dexcom G7: ${parsedSgv} mg/dL ${arrow}`, 'emerald');
+        }
+        return true;
+      } catch (err) {
+        const errMsg = `Fehler beim Abruf: ${err.message}. Prüfe URL & CORS.`;
+        updateDexcomFeedFeedback(errMsg, 'error');
+        if (manualTrigger) {
+          showToast('Dexcom-Abruf fehlgeschlagen', 'red');
+        }
+        return false;
+      } finally {
+        isFetchingDexcomFeed = false;
+      }
+    }
+
+    function setupDexcomAutoPolling() {
+      if (dexcomPollIntervalId) {
+        clearInterval(dexcomPollIntervalId);
+        dexcomPollIntervalId = null;
+      }
+
+      const feedUrl = (appState.settings.dexcomFeedUrl || '').trim();
+      if (appState.settings.dexcomAutoSync && feedUrl) {
+        // Alle 5 Minuten (300.000 ms) automatisch aktualisieren
+        dexcomPollIntervalId = setInterval(() => {
+          fetchDexcomLiveFeed(false);
+        }, 5 * 60 * 1000);
+      }
+    }
+
+    // Relativen Zeitstempel im Header jede 30 Sekunden auffrischen
+    setInterval(() => {
+      renderGlucoseUI();
+    }, 30 * 1000);
+
+    // Beim Zurückkehren in die App (iOS Vordergrund) sofort URL-Parameter & ggf. Live-Feed prüfen
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        const hadUrlParams = handleUrlParameters(false);
+        if (!hadUrlParams && appState.settings.dexcomAutoSync && appState.settings.dexcomFeedUrl) {
+          const ageMs = Date.now() - (appState.glucose.lastSyncTimestamp || 0);
+          if (ageMs >= 4.5 * 60 * 1000) {
+            fetchDexcomLiveFeed(false);
+          }
+        }
+        renderGlucoseUI();
+      }
+    });
+
+    // =========================================================
+    // TAB-NAVIGATION
+    // =========================================================
+    const tabBtns = document.querySelectorAll('.nav-tab-btn');
+    const tabSections = {
+      heute: document.getElementById('tab-heute'),
+      coach: document.getElementById('tab-coach'),
+      koerper: document.getElementById('tab-koerper'),
+      setup: document.getElementById('tab-setup')
+    };
+
+    function switchTab(tabName) {
+      Object.keys(tabSections).forEach((key) => {
+        if (key === tabName) {
+          tabSections[key].classList.remove('hidden');
+        } else {
+          tabSections[key].classList.add('hidden');
+        }
+      });
+
+      tabBtns.forEach((btn) => {
+        const active = btn.dataset.tab === tabName;
+        if (active) {
+          btn.classList.add('bg-ios-input', 'text-white', 'shadow');
+          btn.classList.remove('text-ios-gray');
+        } else {
+          btn.classList.remove('bg-ios-input', 'text-white', 'shadow');
+          btn.classList.add('text-ios-gray');
+        }
+      });
+
+      if (tabName === 'coach') {
+        setTimeout(() => {
+          window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        }, 60);
+      }
+    }
+
+    tabBtns.forEach((btn) => {
+      btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+    });
+
+    // =========================================================
+    // INSULIN-BERECHNUNGS-LOGIK (OMNIPOD 5 RECHENHILFE)
+    // =========================================================
+    function calculateInsulinEstimate(carbsGrams, includeCorrection = true) {
+      const keFactor = Number(appState.settings.keFactor) || 2.2;
+      const targetBz = Number(appState.settings.targetBz) || 110;
+      const isf = Number(appState.settings.isf) || 35;
+      const currentBz = Number(appState.glucose.value) || 110;
+
+      // 1 KE = 10g Kohlenhydrate
+      const mealUnits = (Math.max(0, carbsGrams) / 10) * keFactor;
+
+      let correctionUnits = 0;
+      if (includeCorrection && currentBz > targetBz && isf > 0) {
+        correctionUnits = (currentBz - targetBz) / isf;
+      }
+
+      // Bei niedrigem Blutzucker (< 70 mg/dL) keine Korrektur
+      if (currentBz < 70) {
+        correctionUnits = 0;
+      }
+
+      const totalUnits = Math.max(0, mealUnits + correctionUnits);
+      return {
+        mealUnits: Math.round(mealUnits * 10) / 10,
+        correctionUnits: Math.round(correctionUnits * 10) / 10,
+        totalUnits: Math.round(totalUnits * 10) / 10
+      };
+    }
+
+    // =========================================================
+    // RENDER: DASHBOARD ("HEUTE")
+    // =========================================================
+    function renderDashboard() {
+      const todayData = getTodayData();
+      const s = appState.settings;
+
+      // Datum im Header
+      const now = new Date();
+      document.getElementById('header-date-label').textContent = now.toLocaleDateString('de-DE', {
+        weekday: 'short',
+        day: '2-digit',
+        month: 'short'
+      });
+
+      // Summen der heutigen Mahlzeiten
+      let eatenCal = 0;
+      let eatenP = 0;
+      let eatenC = 0;
+      let eatenF = 0;
+
+      todayData.meals.forEach((m) => {
+        eatenCal += Number(m.calories) || 0;
+        eatenP += Number(m.protein) || 0;
+        eatenC += Number(m.carbs) || 0;
+        eatenF += Number(m.fat) || 0;
+      });
+
+      // Schritte-Aktivitätsbonus (~35 kcal pro 1.000 Schritte)
+      const stepsBonus = Math.round((todayData.steps || 0) * STEP_CAL_FACTOR);
+      const totalBudget = Number(s.calGoal) + stepsBonus;
+      const remaining = totalBudget - Math.round(eatenCal);
+
+      document.getElementById('cal-base-val').textContent = `${formatNumberDE(s.calGoal)} kcal`;
+      document.getElementById('cal-bonus-val').textContent = `+${formatNumberDE(stepsBonus)} kcal`;
+      document.getElementById('cal-eaten-val').textContent = `${formatNumberDE(Math.round(eatenCal))} kcal`;
+      document.getElementById('cal-total-budget-val').textContent = `${formatNumberDE(totalBudget)} kcal`;
+
+      const remEl = document.getElementById('cal-remaining-val');
+      const remLabel = document.getElementById('cal-remaining-label');
+      const statusPill = document.getElementById('cal-status-pill');
+      const ring = document.getElementById('cal-ring-progress');
+      const circumference = 314.16;
+
+      if (remaining >= 0) {
+        remEl.textContent = formatNumberDE(remaining);
+        remEl.className = 'text-2xl font-extrabold num-tab leading-none text-white';
+        remLabel.textContent = 'kcal übrig';
+        statusPill.textContent = 'Im Defizit';
+        statusPill.className = 'text-xs font-semibold px-2.5 py-1 rounded-full bg-ios-emerald/15 text-ios-emerald';
+        ring.setAttribute('stroke', '#30D158');
+      } else {
+        remEl.textContent = formatNumberDE(Math.abs(remaining));
+        remEl.className = 'text-2xl font-extrabold num-tab leading-none text-ios-red';
+        remLabel.textContent = 'kcal drüber';
+        statusPill.textContent = 'Über Budget';
+        statusPill.className = 'text-xs font-semibold px-2.5 py-1 rounded-full bg-ios-red/15 text-ios-red';
+        ring.setAttribute('stroke', '#FF453A');
+      }
+
+      const ratio = totalBudget > 0 ? Math.min(1, Math.max(0, eatenCal / totalBudget)) : 0;
+      const offset = circumference * (1 - ratio);
+      ring.setAttribute('stroke-dashoffset', offset.toFixed(2));
+
+      // Makro-Balken
+      updateMacroBar('p', eatenP, s.proteinGoal);
+      updateMacroBar('c', eatenC, s.carbsGoal);
+      updateMacroBar('f', eatenF, s.fatGoal);
+
+      // Dexcom G7 Glukose-Anzeige & Rechner
+      renderGlucoseUI();
+      updateBolusCalculatorUI();
+
+      // Heutige Mahlzeitenliste
+      renderMealsList(todayData.meals);
+    }
+
+    function updateMacroBar(key, current, target) {
+      const safeTarget = Math.max(1, Number(target) || 1);
+      const pct = Math.round((current / safeTarget) * 100);
+      const barWidth = Math.min(100, pct);
+
+      document.getElementById(`macro-${key}-pct`).textContent = `${pct}%`;
+      document.getElementById(`macro-${key}-bar`).style.width = `${barWidth}%`;
+      document.getElementById(`macro-${key}-val`).textContent = Math.round(current);
+      document.getElementById(`macro-${key}-target`).textContent = Math.round(safeTarget);
+    }
+
+    function renderGlucoseUI() {
+      const bz = Number(appState.glucose.value) || 118;
+      const trend = normalizeDexcomTrend(appState.glucose.trend);
+      const relTime = formatRelativeSyncTime(appState.glucose.lastSyncTimestamp, appState.glucose.syncSource);
+
+      // Header Live Dexcom G7 Pill
+      const headerDot = document.getElementById('header-bz-dot');
+      const headerText = document.getElementById('header-bz-text');
+      const headerSync = document.getElementById('header-bz-sync-status');
+      headerText.textContent = `${bz} mg/dL ${trend}`;
+      headerSync.textContent = relTime;
+
+      // Dashboard Dexcom Box
+      const box = document.getElementById('bz-status-box');
+      const pill = document.getElementById('bz-value-pill');
+      const zoneLabel = document.getElementById('bz-zone-label');
+      document.getElementById('bz-updated-time').textContent = relTime;
+      document.getElementById('bz-trend-select').value = trend;
+      pill.textContent = bz;
+
+      if (bz < 70) {
+        headerDot.className = 'w-2.5 h-2.5 rounded-full bg-ios-red animate-pulse shrink-0';
+        headerSync.className = 'text-[10px] font-semibold text-ios-red num-tab';
+        box.className = 'rounded-2xl p-3.5 bg-ios-red/15 border border-ios-red/35 flex items-center justify-between gap-3';
+        pill.className = 'px-3.5 py-2 rounded-xl bg-ios-red/25 text-ios-red font-extrabold text-2xl num-tab shrink-0';
+        zoneLabel.className = 'text-xs font-bold text-ios-red truncate';
+        zoneLabel.textContent = '• Unterzucker (<70)';
+      } else if (bz > 160) {
+        headerDot.className = 'w-2.5 h-2.5 rounded-full bg-ios-amber shrink-0';
+        headerSync.className = 'text-[10px] font-semibold text-ios-amber num-tab';
+        box.className = 'rounded-2xl p-3.5 bg-ios-amber/10 border border-ios-amber/30 flex items-center justify-between gap-3';
+        pill.className = 'px-3.5 py-2 rounded-xl bg-ios-amber/20 text-ios-amber font-extrabold text-2xl num-tab shrink-0';
+        zoneLabel.className = 'text-xs font-bold text-ios-amber truncate';
+        zoneLabel.textContent = '• Erhöht (>160)';
+      } else {
+        headerDot.className = 'w-2.5 h-2.5 rounded-full bg-ios-emerald shrink-0';
+        headerSync.className = 'text-[10px] font-semibold text-ios-emerald num-tab';
+        box.className = 'rounded-2xl p-3.5 bg-ios-emerald/10 border border-ios-emerald/25 flex items-center justify-between gap-3';
+        pill.className = 'px-3.5 py-2 rounded-xl bg-ios-emerald/20 text-ios-emerald font-extrabold text-2xl num-tab shrink-0';
+        zoneLabel.className = 'text-xs font-bold text-ios-emerald truncate';
+        zoneLabel.textContent = '• Zielbereich (70–160)';
+      }
+
+      // Rechner-Anzeige ebenfalls live halten
+      updateBolusCalculatorUI();
+    }
+
+    function updateBolusCalculatorUI() {
+      const carbsVal = parseFloat(document.getElementById('bolus-carbs-input').value) || 0;
+      const includeCorr = document.getElementById('bolus-correction-toggle').checked;
+      const keFactor = Number(appState.settings.keFactor) || 2.2;
+      const currentBz = Number(appState.glucose.value) || 118;
+      const targetBz = Number(appState.settings.targetBz) || 110;
+
+      document.getElementById('calc-factor-badge').textContent = `Faktor: ${formatNumberDE(keFactor, 1)} IE / 10g KH`;
+      document.getElementById('calc-live-bz-display').textContent = `${currentBz} mg/dL (Ziel: ${targetBz})`;
+
+      const res = calculateInsulinEstimate(carbsVal, includeCorr);
+      document.getElementById('bolus-total-units').textContent = formatNumberDE(res.totalUnits, 1);
+
+      if (currentBz < 70) {
+        document.getElementById('bolus-breakdown-text').textContent = 'Achtung: Blutzucker unter 70 mg/dL!';
+      } else {
+        document.getElementById('bolus-breakdown-text').textContent =
+          `${formatNumberDE(res.mealUnits, 1)} IE Mahlzeit + ${formatNumberDE(res.correctionUnits, 1)} IE Korrektur`;
+      }
+    }
+
+    function renderMealsList(meals) {
+      const listEl = document.getElementById('meals-list');
+      const emptyEl = document.getElementById('meals-empty');
+      listEl.innerHTML = '';
+
+      if (!meals || meals.length === 0) {
+        emptyEl.classList.remove('hidden');
+        return;
+      }
+
+      emptyEl.classList.add('hidden');
+      meals.forEach((meal) => {
+        const insulin = calculateInsulinEstimate(meal.carbs || 0, false).mealUnits;
+        const card = document.createElement('div');
+        card.className = 'bg-[#090A0F]/65 rounded-2xl p-3.5 border border-white/[0.06] flex items-center gap-3';
+
+        if (meal.thumbnail) {
+          const img = document.createElement('img');
+          img.src = meal.thumbnail;
+          img.alt = meal.name;
+          img.className = 'w-14 h-14 rounded-xl object-cover shrink-0 border border-white/10';
+          card.appendChild(img);
+        }
+
+        const info = document.createElement('div');
+        info.className = 'flex-1 min-w-0';
+
+        const topRow = document.createElement('div');
+        topRow.className = 'flex items-center justify-between gap-2';
+
+        const title = document.createElement('p');
+        title.className = 'text-sm font-bold text-white truncate';
+        title.textContent = meal.name;
+
+        const cal = document.createElement('span');
+        cal.className = 'text-xs font-extrabold text-ios-emerald num-tab shrink-0';
+        cal.textContent = `${Math.round(meal.calories)} kcal`;
+
+        topRow.appendChild(title);
+        topRow.appendChild(cal);
+
+        const macroLine = document.createElement('p');
+        macroLine.className = 'text-[11px] text-ios-gray mt-1 num-tab';
+        macroLine.textContent = `${Math.round(meal.protein || 0)}g E • ${Math.round(meal.carbs || 0)}g KH • ${Math.round(meal.fat || 0)}g F`;
+
+        const actionRow = document.createElement('div');
+        actionRow.className = 'flex items-center gap-2 mt-2';
+
+        const calcBtn = document.createElement('button');
+        calcBtn.type = 'button';
+        calcBtn.className = 'text-[11px] font-semibold text-ios-blue bg-ios-blue/15 px-2.5 py-1 rounded-lg active:scale-95 transition num-tab';
+        calcBtn.textContent = `💉 ~${formatNumberDE(insulin, 1)} IE · In Rechner übernehmen`;
+        calcBtn.addEventListener('click', () => {
+          const carbsInput = document.getElementById('bolus-carbs-input');
+          carbsInput.value = Math.round(meal.carbs || 0);
+          updateBolusCalculatorUI();
+          document.getElementById('bolus-calculator-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
+          showToast(`${Math.round(meal.carbs || 0)}g KH in Rechner übernommen`, 'blue');
+        });
+
+        actionRow.appendChild(calcBtn);
+
+        info.appendChild(topRow);
+        info.appendChild(macroLine);
+        info.appendChild(actionRow);
+
+        const delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.ariaLabel = 'Mahlzeit löschen';
+        delBtn.className = 'p-2 text-ios-gray hover:text-ios-red active:scale-90 transition shrink-0';
+        delBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>`;
+        delBtn.addEventListener('click', () => {
+          const todayData = getTodayData();
+          todayData.meals = todayData.meals.filter((m) => m.id !== meal.id);
+          saveState();
+          renderDashboard();
+          showToast('Mahlzeit entfernt');
+        });
+
+        card.appendChild(info);
+        card.appendChild(delBtn);
+        listEl.appendChild(card);
+      });
+    }
+
+    // Event-Listener für Dashboard
+    document.getElementById('header-bz-badge').addEventListener('click', () => {
+      document.getElementById('modal-bz-input').value = appState.glucose.value;
+      document.getElementById('modal-bz-trend').value = normalizeDexcomTrend(appState.glucose.trend);
+      openModal('bz-modal');
+    });
+
+    document.getElementById('open-bz-modal-btn').addEventListener('click', () => {
+      document.getElementById('modal-bz-input').value = appState.glucose.value;
+      document.getElementById('modal-bz-trend').value = normalizeDexcomTrend(appState.glucose.trend);
+      openModal('bz-modal');
+    });
+
+    document.getElementById('dash-sync-now-btn').addEventListener('click', () => {
+      if ((appState.settings.dexcomFeedUrl || '').trim()) {
+        fetchDexcomLiveFeed(true);
+      } else {
+        switchTab('setup');
+        showToast('Hinterlege hier deine Dexcom Live-Feed URL', 'blue');
+      }
+    });
+
+    document.getElementById('save-bz-modal-btn').addEventListener('click', () => {
+      const val = parseInt(document.getElementById('modal-bz-input').value, 10);
+      const trend = normalizeDexcomTrend(document.getElementById('modal-bz-trend').value);
+      if (isNaN(val) || val < 20 || val > 600) {
+        showToast('Bitte gültigen Wert (20–600) eingeben', 'red');
+        return;
+      }
+      appState.glucose.value = val;
+      appState.glucose.trend = trend;
+      appState.glucose.lastSyncTimestamp = Date.now();
+      appState.glucose.syncSource = 'Manuell';
+      saveState();
+      renderDashboard();
+      closeModal('bz-modal');
+      showToast(`Dexcom Wert auf ${val} mg/dL ${trend} gesetzt`, 'emerald');
+    });
+
+    document.getElementById('bz-trend-select').addEventListener('change', (e) => {
+      appState.glucose.trend = normalizeDexcomTrend(e.target.value);
+      appState.glucose.lastSyncTimestamp = Date.now();
+      saveState();
+      renderGlucoseUI();
+    });
+
+    document.getElementById('bolus-carbs-input').addEventListener('input', updateBolusCalculatorUI);
+    document.getElementById('bolus-correction-toggle').addEventListener('change', updateBolusCalculatorUI);
+
+    document.getElementById('open-manual-meal-btn').addEventListener('click', () => {
+      document.getElementById('manual-meal-form').reset();
+      openModal('meal-modal');
+    });
+
+    document.getElementById('manual-meal-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = document.getElementById('meal-name-input').value.trim();
+      const calories = parseFloat(document.getElementById('meal-cal-input').value) || 0;
+      const protein = parseFloat(document.getElementById('meal-protein-input').value) || 0;
+      const carbs = parseFloat(document.getElementById('meal-carbs-input').value) || 0;
+      const fat = parseFloat(document.getElementById('meal-fat-input').value) || 0;
+
+      if (!name) return;
+
+      getTodayData().meals.unshift({
+        id: 'meal-' + Date.now(),
+        name,
+        calories,
+        protein,
+        carbs,
+        fat,
+        thumbnail: null
+      });
+
+      saveState();
+      renderDashboard();
+      closeModal('meal-modal');
+      showToast(`${name} eingetragen!`);
+    });
+
+    // =========================================================
+    // BILD-KOMPRIMIERUNG (CANVAS) FÜR ESSENSFOTOS & FORTSCHRITT
+    // =========================================================
+    function compressImageFile(file, maxDimension = 800, quality = 0.75) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const img = new Image();
+          img.onload = () => {
+            let width = img.width;
+            let height = img.height;
+
+            if (width > height) {
+              if (width > maxDimension) {
+                height = Math.round((height * maxDimension) / width);
+                width = maxDimension;
+              }
+            } else {
+              if (height > maxDimension) {
+                width = Math.round((width * maxDimension) / height);
+                height = maxDimension;
+              }
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            const dataUrl = canvas.toDataURL('image/jpeg', quality);
+            resolve(dataUrl);
+          };
+          img.onerror = () => reject(new Error('Bild konnte nicht gelesen werden.'));
+          img.src = event.target.result;
+        };
+        reader.onerror = () => reject(new Error('Datei-Fehler.'));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // =========================================================
+    // TAB 2: KI-COACH (GEMINI 2.5 FLASH + SMART OFFLINE PARSER)
+    // =========================================================
+    let pendingChatImageFull = null;
+    let pendingChatImageThumb = null;
+
+    const chatFileInput = document.getElementById('chat-file-input');
+    const chatAttachBtn = document.getElementById('chat-attach-btn');
+    const chipPhotoBtn = document.getElementById('chip-photo-btn');
+    const chatImagePreviewBox = document.getElementById('chat-image-preview-box');
+    const chatImagePreview = document.getElementById('chat-image-preview');
+    const removeChatImageBtn = document.getElementById('remove-chat-image-btn');
+
+    chatAttachBtn.addEventListener('click', () => chatFileInput.click());
+    chipPhotoBtn.addEventListener('click', () => chatFileInput.click());
+
+    chatFileInput.addEventListener('change', async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      try {
+        pendingChatImageFull = await compressImageFile(file, 800, 0.75);
+        pendingChatImageThumb = await compressImageFile(file, 180, 0.65);
+        chatImagePreview.src = pendingChatImageFull;
+        chatImagePreviewBox.classList.remove('hidden');
+      } catch (err) {
+        showToast('Bild konnte nicht verarbeitet werden', 'red');
+      }
+      chatFileInput.value = '';
+    });
+
+    removeChatImageBtn.addEventListener('click', () => {
+      pendingChatImageFull = null;
+      pendingChatImageThumb = null;
+      chatImagePreviewBox.classList.add('hidden');
+    });
+
+    document.querySelectorAll('.quick-chip').forEach((chip) => {
+      chip.addEventListener('click', () => {
+        const prompt = chip.dataset.prompt;
+        if (prompt === 'Gewicht loggen') {
+          const input = document.getElementById('chat-input');
+          input.value = 'Mein aktuelles Gewicht ist ';
+          input.focus();
+          return;
+        }
+        sendChatMessage(prompt);
+      });
+    });
+
+    function updateAiStatusHeader() {
+      const hasKey = Boolean(appState.settings.apiKey && appState.settings.apiKey.trim().length > 10);
+      const dot = document.getElementById('ai-mode-dot');
+      const label = document.getElementById('ai-mode-label');
+      const shortcut = document.getElementById('ai-setup-shortcut');
+
+      if (hasKey) {
+        dot.className = 'w-2 h-2 rounded-full bg-ios-emerald';
+        label.textContent = 'Gemini 2.5 Flash verbunden';
+        shortcut.textContent = 'API-Key aktiv ✓';
+        shortcut.className = 'text-[11px] font-semibold text-ios-emerald';
+      } else {
+        dot.className = 'w-2 h-2 rounded-full bg-ios-blue';
+        label.textContent = 'Smart-Coach aktiv';
+        shortcut.textContent = 'Gratis Gemini-Key für Fotos →';
+        shortcut.className = 'text-[11px] font-semibold text-ios-blue hover:underline';
+      }
+    }
+
+    function renderChatHistory() {
+      updateAiStatusHeader();
+      const container = document.getElementById('chat-messages');
+      container.innerHTML = '';
+
+      appState.chatHistory.forEach((msg) => {
+        const wrapper = document.createElement('div');
+        wrapper.className = `flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`;
+
+        const bubble = document.createElement('div');
+        bubble.className =
+          msg.role === 'user'
+            ? 'max-w-[85%] bg-ios-blue text-white rounded-2xl rounded-br-md px-4 py-3 text-sm leading-relaxed shadow-md'
+            : 'max-w-[90%] glass-card text-white rounded-2xl rounded-bl-md px-4 py-3 text-sm leading-relaxed';
+
+        if (msg.imagePreview) {
+          const img = document.createElement('img');
+          img.src = msg.imagePreview;
+          img.alt = 'Gesendetes Foto';
+          img.className = 'w-full max-h-48 object-cover rounded-xl mb-2 border border-white/15';
+          bubble.appendChild(img);
+        }
+
+        const textEl = document.createElement('p');
+        textEl.className = 'whitespace-pre-line';
+        textEl.textContent = msg.text;
+        bubble.appendChild(textEl);
+
+        wrapper.appendChild(bubble);
+
+        if (msg.role === 'assistant' && msg.action && msg.action.type && msg.action.type !== 'none') {
+          const actionCard = buildActionCard(msg);
+          wrapper.appendChild(actionCard);
+        }
+
+        container.appendChild(wrapper);
+      });
+    }
+
+    function buildActionCard(msg) {
+      const act = msg.action;
+      const card = document.createElement('div');
+      card.className = 'max-w-[90%] w-full mt-2 bg-[#141720] border border-ios-blue/35 rounded-2xl p-3.5 space-y-2.5';
+
+      if (act.type === 'meal') {
+        const insulin = calculateInsulinEstimate(act.carbs || 0, true);
+        card.innerHTML = `
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-ios-emerald">Mahlzeit erkannt</span>
+            <span class="text-xs font-extrabold text-white num-tab">${Math.round(act.calories || 0)} kcal</span>
+          </div>
+          <p class="text-sm font-bold text-white"></p>
+          <div class="grid grid-cols-4 gap-1.5 text-center bg-[#090A0F]/70 rounded-xl p-2 border border-white/5 num-tab">
+            <div>
+              <p class="text-[10px] text-ios-emerald">Eiweiß</p>
+              <p class="text-xs font-bold text-white">${Math.round(act.protein || 0)}g</p>
+            </div>
+            <div>
+              <p class="text-[10px] text-ios-blue">KH</p>
+              <p class="text-xs font-bold text-white">${Math.round(act.carbs || 0)}g</p>
+            </div>
+            <div>
+              <p class="text-[10px] text-ios-amber">Fett</p>
+              <p class="text-xs font-bold text-white">${Math.round(act.fat || 0)}g</p>
+            </div>
+            <div>
+              <p class="text-[10px] text-ios-cyan">Bolus-Hilfe</p>
+              <p class="text-xs font-bold text-ios-cyan">~${formatNumberDE(insulin.totalUnits, 1)} IE</p>
+            </div>
+          </div>
+        `;
+        card.querySelector('p.text-sm').textContent = act.title || 'Mahlzeit';
+      } else if (act.type === 'steps') {
+        card.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-ios-amber">Schritte erkannt</span>
+            <span class="text-sm font-extrabold text-white num-tab">+${formatNumberDE(act.steps || 0)} Schritte</span>
+          </div>
+        `;
+      } else if (act.type === 'weight') {
+        card.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-ios-blue">Gewicht erkannt</span>
+            <span class="text-sm font-extrabold text-white num-tab">${formatNumberDE(act.weight || 0, 1)} kg</span>
+          </div>
+        `;
+      } else if (act.type === 'glucose') {
+        card.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-ios-emerald">Dexcom G7 Wert</span>
+            <span class="text-sm font-extrabold text-white num-tab">${Math.round(act.glucose || 118)} mg/dL</span>
+          </div>
+        `;
+      }
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      if (msg.applied) {
+        btn.disabled = true;
+        btn.className = 'w-full bg-ios-input text-ios-emerald font-bold text-xs py-2.5 rounded-xl cursor-default';
+        btn.textContent = '✓ Im Tagebuch gespeichert';
+      } else {
+        btn.className = 'w-full bg-ios-emerald text-black font-bold text-xs py-2.5 rounded-xl active:scale-95 transition shadow-md shadow-ios-emerald/20';
+        btn.textContent = '✅ Ins Tagebuch speichern';
+        btn.addEventListener('click', () => applyCoachAction(msg));
+      }
+
+      card.appendChild(btn);
+      return card;
+    }
+
+    function applyCoachAction(msg) {
+      const act = msg.action;
+      if (!act || msg.applied) return;
+
+      if (act.type === 'meal') {
+        getTodayData().meals.unshift({
+          id: 'meal-' + Date.now(),
+          name: act.title || 'KI-Mahlzeit',
+          calories: Math.round(act.calories || 0),
+          protein: Math.round(act.protein || 0),
+          carbs: Math.round(act.carbs || 0),
+          fat: Math.round(act.fat || 0),
+          thumbnail: msg.attachedThumb || null
+        });
+        document.getElementById('bolus-carbs-input').value = Math.round(act.carbs || 0);
+        showToast(`${act.title || 'Mahlzeit'} gespeichert!`);
+      } else if (act.type === 'steps') {
+        getTodayData().steps = (getTodayData().steps || 0) + Math.round(act.steps || 0);
+        showToast(`+${formatNumberDE(act.steps)} Schritte hinzugefügt!`, 'amber');
+      } else if (act.type === 'weight') {
+        const w = Math.round((Number(act.weight) || 0) * 10) / 10;
+        if (w > 20 && w < 400) {
+          addWeightEntry(w);
+          showToast(`Gewicht ${formatNumberDE(w, 1)} kg gespeichert!`);
+        }
+      } else if (act.type === 'glucose') {
+        const bz = Math.round(Number(act.glucose) || 118);
+        appState.glucose.value = bz;
+        appState.glucose.lastSyncTimestamp = Date.now();
+        appState.glucose.syncSource = 'KI-Chat';
+        showToast(`Blutzucker ${bz} mg/dL aktualisiert!`, 'emerald');
+      }
+
+      msg.applied = true;
+      saveState();
+      renderChatHistory();
+      renderDashboard();
+      renderKoerperTab();
+    }
+
+    // =========================================================
+    // GEMINI 2.5 FLASH API CALL MIT EXPONENTIAL BACKOFF
+    // =========================================================
+    async function callGeminiCoach(userText, base64ImageFull) {
+      const apiKey = (appState.settings.apiKey || '').trim();
+      const todayData = getTodayData();
+      const s = appState.settings;
+
+      const eatenCal = todayData.meals.reduce((acc, m) => acc + (Number(m.calories) || 0), 0);
+      const eatenP = todayData.meals.reduce((acc, m) => acc + (Number(m.protein) || 0), 0);
+      const eatenC = todayData.meals.reduce((acc, m) => acc + (Number(m.carbs) || 0), 0);
+      const stepsBonus = Math.round((todayData.steps || 0) * STEP_CAL_FACTOR);
+      const remCal = Number(s.calGoal) + stepsBonus - Math.round(eatenCal);
+      const latestWeight = appState.weightHistory.length > 0
+        ? appState.weightHistory[appState.weightHistory.length - 1].weight
+        : s.startWeight;
+
+      const systemPrompt = `Du bist "GlucoFit AI", ein motivierender, präziser deutscher Fitness-, Ernährungs- und Typ-1-Diabetes-Coach (Begleiter für Dexcom G7 & Omnipod 5).
+Der Nutzer befindet sich in einem Kaloriendefizit zum Abnehmen.
+Aktuelle Echtzeit-Daten des Nutzers heute:
+- Verbleibende Kalorien heute: ${remCal} kcal (Ziel: ${s.calGoal} kcal + ${stepsBonus} kcal Schritt-Bonus, bereits gegessen: ${Math.round(eatenCal)} kcal)
+- Eiweiß heute: ${Math.round(eatenP)}g von ${s.proteinGoal}g Ziel
+- Kohlenhydrate heute: ${Math.round(eatenC)}g von ${s.carbsGoal}g Ziel
+- Schritte heute: ${todayData.steps} von ${s.stepsGoal} Ziel
+- Aktueller Live Dexcom G7 Blutzucker: ${appState.glucose.value} mg/dL (Trend: ${appState.glucose.trend})
+- Persönlicher Omnipod 5 KH-Faktor: ${s.keFactor} IE pro 10g Kohlenhydrate (Ziel-BZ: ${s.targetBz} mg/dL, Korrekturfaktor: ${s.isf})
+- Aktuelles Gewicht: ${latestWeight} kg
+
+Deine Aufgaben:
+1. Wenn der Nutzer ein Essensfoto schickt oder eine Mahlzeit nennt, schätze Kalorien, Eiweiß (g), Kohlenhydrate (g) und Fett (g) so realistisch und präzise wie möglich.
+2. Wenn der Nutzer Schritte, Gewicht oder einen Blutzuckerwert nennt, erfasse diesen Wert als strukturierte Aktion.
+3. Wenn der Nutzer nach Essens-Empfehlungen fragt ("Was soll ich noch essen?"), schlage eine konkrete proteinreiche Mahlzeit vor, die perfekt in seine verbleibenden Kalorien und zum aktuellen Dexcom G7 Blutzucker passt, und liefere die Nährwerte dieser Empfehlung ebenfalls als "meal"-Aktion.
+4. Antworte locker, motivierend ("Bro"-Ton erlaubt, aber fachlich top), kurz und übersichtlich auf Deutsch. Gib niemals verbindliche medizinische Dosierungsbefehle, sondern formuliere Insulin immer als persönliche Rechenhilfe für den Omnipod 5.`;
+
+      const parts = [];
+      if (userText) {
+        parts.push({ text: userText });
+      } else if (base64ImageFull) {
+        parts.push({ text: 'Analysiere diese Mahlzeit auf dem Foto für mein Kaloriendefizit und meinen Typ-1-Diabetes (Kalorien, Eiweiß, Kohlenhydrate, Fett).' });
+      }
+
+      if (base64ImageFull) {
+        const cleanBase64 = base64ImageFull.split(',')[1];
+        parts.push({
+          inlineData: {
+            mimeType: 'image/jpeg',
+            data: cleanBase64
+          }
+        });
+      }
+
+      const payload = {
+        systemInstruction: {
+          parts: [{ text: systemPrompt }]
+        },
+        contents: [
+          {
+            role: 'user',
+            parts
+          }
+        ],
+        generationConfig: {
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: 'OBJECT',
+            properties: {
+              reply: { type: 'STRING' },
+              action: {
+                type: 'OBJECT',
+                properties: {
+                  type: { type: 'STRING', enum: ['meal', 'steps', 'weight', 'glucose', 'none'] },
+                  title: { type: 'STRING' },
+                  calories: { type: 'NUMBER' },
+                  protein: { type: 'NUMBER' },
+                  carbs: { type: 'NUMBER' },
+                  fat: { type: 'NUMBER' },
+                  steps: { type: 'NUMBER' },
+                  weight: { type: 'NUMBER' },
+                  glucose: { type: 'NUMBER' }
+                },
+                required: ['type', 'title', 'calories', 'protein', 'carbs', 'fat', 'steps', 'weight', 'glucose']
+              }
+            },
+            required: ['reply', 'action']
+          }
+        }
+      };
+
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
+
+      const delays = [1000, 2000, 4000];
+      for (let attempt = 0; attempt <= delays.length; attempt++) {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (!rawText) throw new Error('Leere Antwort von Gemini.');
+          return JSON.parse(rawText);
+        }
+
+        if ((response.status === 429 || response.status >= 500) && attempt < delays.length) {
+          await new Promise((r) => setTimeout(r, delays[attempt]));
+          continue;
+        }
+
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData?.error?.message || `API-Fehler (${response.status})`);
+      }
+    }
+
+    // =========================================================
+    // SMARTER OFFLINE-PARSER (MIT MENGENERKENNUNG IN GRAMM)
+    // =========================================================
+    function runOfflineSmartCoach(userText, hasImage) {
+      const lower = (userText || '').toLowerCase();
+
+      if (hasImage) {
+        return {
+          reply: 'Starkes Foto! 📸 Für echte automatische Bilderkennung auf deinem Teller hinterlege noch deinen kostenlosen Google AI Studio Key im Tab „Setup“ (dauert 30 Sekunden & kostet 0 €).\n\nBis dahin kannst du diese Fitness-Portion direkt übernehmen oder im Tab „Heute“ anpassen:',
+          action: {
+            type: 'meal',
+            title: 'Teller-Mahlzeit (Schätzung)',
+            calories: 520,
+            protein: 42,
+            carbs: 45,
+            fat: 16,
+            steps: 0,
+            weight: 0,
+            glucose: 0
+          }
+        };
+      }
+
+      // 1. Schritte erkennen
+      if (lower.includes('schritt')) {
+        const match = lower.replace(/\./g, '').match(/(\d{2,6})/);
+        const steps = match ? parseInt(match[1], 10) : 4000;
+        return {
+          reply: `Stark durchgezogen, Bro! 🚶‍♂️ +${formatNumberDE(steps)} Schritte bringen dir direkt ca. +${Math.round(steps * STEP_CAL_FACTOR)} kcal Aktivitätsbonus für dein Defizit:`,
+          action: {
+            type: 'steps',
+            title: 'Schritte',
+            calories: 0,
+            protein: 0,
+            carbs: 0,
+            fat: 0,
+            steps,
+            weight: 0,
+            glucose: 0
+          }
+        };
+      }
+
+      // 2. Gewicht erkennen
+      if (lower.includes('gewicht') || lower.includes('kg') || lower.includes('wiege')) {
+        const match = lower.replace(',', '.').match(/(\d{2,3}(?:\.\d{1,2})?)/);
+        if (match) {
+          const weight = parseFloat(match[1]);
+          return {
+            reply: `Top, dass du dranbleibst! ⚖️ Ich habe ${formatNumberDE(weight, 1)} kg erfasst. Speichere den Wert mit einem Klick in deinen Verlauf:`,
+            action: {
+              type: 'weight',
+              title: 'Gewicht',
+              calories: 0,
+              protein: 0,
+              carbs: 0,
+              fat: 0,
+              steps: 0,
+              weight,
+              glucose: 0
+            }
+          };
+        }
+      }
+
+      // 3. Blutzucker erkennen
+      if (lower.includes('bz') || lower.includes('blutzucker') || lower.includes('zucker') || lower.includes('dexcom')) {
+        const match = lower.match(/(\d{2,3})/);
+        if (match) {
+          const bz = parseInt(match[1], 10);
+          return {
+            reply: `Alles klar, Dexcom G7 Wert: ${bz} mg/dL. ${bz > 160 ? 'Etwas erhöht – denk an Wasser und prüfe eine Korrektur im Omnipod 5.' : bz < 70 ? 'Achtung Unterzucker! Nimm direkt schnelle Kohlenhydrate (Traubenzucker).' : 'Sauber im Zielbereich!'}`,
+            action: {
+              type: 'glucose',
+              title: 'Blutzucker',
+              calories: 0,
+              protein: 0,
+              carbs: 0,
+              fat: 0,
+              steps: 0,
+              weight: 0,
+              glucose: bz
+            }
+          };
+        }
+      }
+
+      // 4. Essens-Empfehlung ("Was soll ich noch essen?")
+      if (lower.includes('was soll ich') || lower.includes('empfehl') || lower.includes('idee') || lower.includes('hunger')) {
+        const todayData = getTodayData();
+        const eatenCal = todayData.meals.reduce((a, m) => a + (m.calories || 0), 0);
+        const eatenP = todayData.meals.reduce((a, m) => a + (m.protein || 0), 0);
+        const remCal = Math.max(0, appState.settings.calGoal + Math.round(todayData.steps * STEP_CAL_FACTOR) - eatenCal);
+        const remP = Math.max(0, appState.settings.proteinGoal - eatenP);
+
+        if (remCal < 350) {
+          return {
+            reply: `Du hast heute noch ca. ${Math.round(remCal)} kcal und ${Math.round(remP)}g Eiweiß offen. Perfekt für das Ende vom Tag: 250g Magerquark mit Beeren – macht mega satt, liefert 31g Eiweiß und hält deinen Dexcom G7 super stabil!`,
+            action: {
+              type: 'meal',
+              title: '250g Magerquark mit Beeren',
+              calories: 215,
+              protein: 31,
+              carbs: 15,
+              fat: 1,
+              steps: 0,
+              weight: 0,
+              glucose: 0
+            }
+          };
+        }
+
+        return {
+          reply: `Du hast noch ${Math.round(remCal)} kcal und ${Math.round(remP)}g Eiweiß offen! Mein Vorschlag: 250g Hähnchenbrust mit 150g gekochtem Reis und Brokkoli – top für Eiweiß und super planbar für den Omnipod 5:`,
+          action: {
+            type: 'meal',
+            title: '250g Hähnchenbrust mit Reis & Brokkoli',
+            calories: 510,
+            protein: 61,
+            carbs: 44,
+            fat: 7,
+            steps: 0,
+            weight: 0,
+            glucose: 0
+          }
+        };
+      }
+
+      // 5. Lebensmittel-Datenbank (pro 100g oder Standardportion, skaliert bei Gramm-Angabe)
+      const foodDb = [
+        { keys: ['eiweißbrot', 'proteinbrot'], baseGrams: 100, defaultGrams: 100, name: 'Eiweißbrot', cal: 245, p: 22, c: 8, f: 12 },
+        { keys: ['eier', 'ei '], baseGrams: 180, defaultGrams: 180, name: '3 Eier', cal: 230, p: 19, c: 2, f: 16 },
+        { keys: ['hähnchen', 'hühnchen', 'chicken'], baseGrams: 100, defaultGrams: 250, name: 'Hähnchenbrust', cal: 112, p: 22.5, c: 0, f: 2 },
+        { keys: ['reis'], baseGrams: 100, defaultGrams: 150, name: 'Reis (gekocht)', cal: 130, p: 2.7, c: 28, f: 0.3 },
+        { keys: ['magerquark', 'quark'], baseGrams: 100, defaultGrams: 250, name: 'Magerquark', cal: 68, p: 12, c: 4, f: 0.3 },
+        { keys: ['skyr'], baseGrams: 100, defaultGrams: 250, name: 'Skyr Natur', cal: 64, p: 11, c: 4, f: 0.2 },
+        { keys: ['whey', 'shake', 'proteinshake'], baseGrams: 30, defaultGrams: 30, name: 'Whey Protein Shake', cal: 120, p: 24, c: 2, f: 2 },
+        { keys: ['haferflocken', 'porridge'], baseGrams: 100, defaultGrams: 60, name: 'Haferflocken', cal: 375, p: 13.5, c: 60, f: 7 },
+        { keys: ['banane'], baseGrams: 120, defaultGrams: 120, name: '1 Banane', cal: 105, p: 1.2, c: 24, f: 0.3 },
+        { keys: ['lachs'], baseGrams: 100, defaultGrams: 200, name: 'Lachsfilet', cal: 205, p: 20, c: 0, f: 13.5 },
+        { keys: ['thunfisch'], baseGrams: 100, defaultGrams: 150, name: 'Thunfisch im eigenen Saft', cal: 110, p: 25, c: 0, f: 0.8 },
+        { keys: ['rinderhack', 'hackfleisch'], baseGrams: 100, defaultGrams: 200, name: 'Rinderhack (mager)', cal: 175, p: 21, c: 0, f: 10 },
+        { keys: ['kartoffel'], baseGrams: 100, defaultGrams: 250, name: 'Kartoffeln (gekocht)', cal: 73, p: 2, c: 15, f: 0.1 },
+        { keys: ['döner'], baseGrams: 350, defaultGrams: 350, name: '1 Döner Kebab', cal: 680, p: 36, c: 58, f: 32 },
+        { keys: ['pizza'], baseGrams: 350, defaultGrams: 350, name: '1 Pizza Margherita', cal: 820, p: 34, c: 96, f: 30 }
+      ];
+
+      const matchedItems = [];
+      foodDb.forEach((item) => {
+        const matchedKey = item.keys.find((k) => lower.includes(k));
+        if (matchedKey) {
+          // Prüfe ob direkt davor eine Grammangabe steht (z.B. "300g hähnchen")
+          const gramRegex = new RegExp(`(\\d{2,4})\\s*g\\s*${matchedKey}`);
+          const gramMatch = lower.match(gramRegex);
+          const grams = gramMatch ? parseInt(gramMatch[1], 10) : item.defaultGrams;
+          const factor = grams / item.baseGrams;
+          const label = item.name.startsWith('1 ') || item.name.startsWith('3 ')
+            ? item.name
+            : `${grams}g ${item.name}`;
+
+          matchedItems.push({
+            label,
+            cal: item.cal * factor,
+            p: item.p * factor,
+            c: item.c * factor,
+            f: item.f * factor
+          });
+        }
+      });
+
+      if (matchedItems.length > 0) {
+        const totals = matchedItems.reduce(
+          (acc, it) => ({
+            names: [...acc.names, it.label],
+            cal: acc.cal + it.cal,
+            p: acc.p + it.p,
+            c: acc.c + it.c,
+            f: acc.f + it.f
+          }),
+          { names: [], cal: 0, p: 0, c: 0, f: 0 }
+        );
+
+        const combinedTitle = totals.names.join(' + ');
+        const bolus = calculateInsulinEstimate(totals.c, true);
+        return {
+          reply: `Alles klar, direkt berechnet! 💪 Bei deinem aktuellen Dexcom-Wert (${appState.glucose.value} mg/dL) und ${Math.round(totals.c)}g KH wären das ca. ${formatNumberDE(bolus.totalUnits, 1)} IE im Omnipod 5 (bitte dort gegenprüfen).`,
+          action: {
+            type: 'meal',
+            title: combinedTitle,
+            calories: totals.cal,
+            protein: totals.p,
+            carbs: totals.c,
+            fat: totals.f,
+            steps: 0,
+            weight: 0,
+            glucose: 0
+          }
+        };
+      }
+
+      return {
+        reply: 'Verstanden! 💡 Tipp: Hinterlege im Tab „Setup“ deinen kostenlosen Google AI Studio Key – dann erkenne ich jedes beliebige Gericht (auch per Kamera-Foto!) und beantworte jede Fitness- & Diabetes-Frage. Im Offline-Modus kannst du direkt Dinge wie „300g Hähnchen und 150g Reis“, „+4.000 Schritte“ oder „Gewicht 88,9 kg“ schreiben!',
+        action: {
+          type: 'none',
+          title: '',
+          calories: 0,
+          protein: 0,
+          carbs: 0,
+          fat: 0,
+          steps: 0,
+          weight: 0,
+          glucose: 0
+        }
+      };
+    }
+
+    // Chat-Nachricht absenden
+    let isSendingChat = false;
+
+    async function sendChatMessage(overrideText = null) {
+      if (isSendingChat) return;
+
+      const inputEl = document.getElementById('chat-input');
+      const text = overrideText !== null ? overrideText : inputEl.value.trim();
+      const imageFull = pendingChatImageFull;
+      const imageThumb = pendingChatImageThumb;
+
+      if (!text && !imageFull) return;
+
+      appState.chatHistory.push({
+        id: 'u-' + Date.now(),
+        role: 'user',
+        text: text || '📸 Essensfoto gesendet',
+        imagePreview: imageThumb || null,
+        action: null,
+        applied: false
+      });
+
+      if (overrideText === null) {
+        inputEl.value = '';
+      }
+      pendingChatImageFull = null;
+      pendingChatImageThumb = null;
+      chatImagePreviewBox.classList.add('hidden');
+
+      saveState();
+      renderChatHistory();
+
+      isSendingChat = true;
+      const container = document.getElementById('chat-messages');
+      const typingDiv = document.createElement('div');
+      typingDiv.id = 'chat-typing-indicator';
+      typingDiv.className = 'flex items-start';
+      typingDiv.innerHTML = `
+        <div class="glass-card rounded-2xl rounded-bl-md px-4 py-3.5 flex items-center gap-1.5">
+          <span class="typing-dot w-2 h-2 rounded-full bg-ios-blue"></span>
+          <span class="typing-dot w-2 h-2 rounded-full bg-ios-blue"></span>
+          <span class="typing-dot w-2 h-2 rounded-full bg-ios-blue"></span>
+        </div>
+      `;
+      container.appendChild(typingDiv);
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+
+      try {
+        const hasKey = Boolean(appState.settings.apiKey && appState.settings.apiKey.trim().length > 10);
+        let aiResult;
+
+        if (hasKey) {
+          aiResult = await callGeminiCoach(text, imageFull);
+        } else {
+          await new Promise((r) => setTimeout(r, 400));
+          aiResult = runOfflineSmartCoach(text, Boolean(imageFull));
+        }
+
+        appState.chatHistory.push({
+          id: 'a-' + Date.now(),
+          role: 'assistant',
+          text: aiResult.reply || 'Erledigt!',
+          action: aiResult.action || null,
+          attachedThumb: imageThumb || null,
+          applied: false
+        });
+      } catch (err) {
+        appState.chatHistory.push({
+          id: 'err-' + Date.now(),
+          role: 'assistant',
+          text: `⚠️ Kurzer Verbindungsfehler zur Gemini API: ${err.message}. Prüfe deinen API-Key im Tab „Setup“ oder nutze den Offline-Modus.`,
+          action: null,
+          applied: false
+        });
+      } finally {
+        isSendingChat = false;
+        const ind = document.getElementById('chat-typing-indicator');
+        if (ind) ind.remove();
+        saveState();
+        renderChatHistory();
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+      }
+    }
+
+    document.getElementById('chat-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      sendChatMessage();
+    });
+
+    document.getElementById('chat-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendChatMessage();
+      }
+    });
+
+    document.getElementById('clear-chat-btn').addEventListener('click', () => {
+      appState.chatHistory = [
+        {
+          id: 'welcome-' + Date.now(),
+          role: 'assistant',
+          text: 'Chat geleert! Bereit für deine nächste Mahlzeit, Schritte oder Frage. 💪',
+          action: null,
+          applied: false
+        }
+      ];
+      saveState();
+      renderChatHistory();
+      showToast('Chatverlauf geleert');
+    });
+
+    // =========================================================
+    // TAB 3: KÖRPER (SCHRITTE, GEWICHT, SVG-CHART & FOTOS)
+    // =========================================================
+    function addWeightEntry(weightVal) {
+      const today = getTodayKey();
+      const idx = appState.weightHistory.findIndex((entry) => entry.date === today);
+      if (idx >= 0) {
+        appState.weightHistory[idx].weight = weightVal;
+      } else {
+        appState.weightHistory.push({ date: today, weight: weightVal });
+      }
+      appState.weightHistory.sort((a, b) => a.date.localeCompare(b.date));
+    }
+
+    function renderKoerperTab() {
+      const todayData = getTodayData();
+      const s = appState.settings;
+
+      // 1. Schritte
+      const steps = todayData.steps || 0;
+      const stepsGoal = Math.max(1, Number(s.stepsGoal) || 10000);
+      const pct = Math.round((steps / stepsGoal) * 100);
+      const bonus = Math.round(steps * STEP_CAL_FACTOR);
+
+      document.getElementById('steps-current-val').textContent = formatNumberDE(steps);
+      document.getElementById('steps-target-val').textContent = formatNumberDE(stepsGoal);
+      document.getElementById('steps-pct-val').textContent = `${pct}%`;
+      document.getElementById('steps-bonus-badge').textContent = `+${formatNumberDE(bonus)} kcal Bonus`;
+      document.getElementById('steps-bar').style.width = `${Math.min(100, pct)}%`;
+
+      // 2. Gewicht & SVG-Liniendiagramm
+      const history = appState.weightHistory;
+      const startW = Number(s.startWeight) || (history[0]?.weight ?? 90.0);
+      const currentW = history.length > 0 ? history[history.length - 1].weight : startW;
+      const diff = Math.round((currentW - startW) * 10) / 10;
+
+      document.getElementById('weight-start-val').textContent = `${formatNumberDE(startW, 1)} kg`;
+      document.getElementById('weight-current-val').textContent = `${formatNumberDE(currentW, 1)} kg`;
+
+      const diffBadge = document.getElementById('weight-diff-badge');
+      if (diff <= 0) {
+        diffBadge.textContent = `${formatNumberDE(diff, 1)} kg`;
+        diffBadge.className = 'text-xs font-bold px-2.5 py-1 rounded-full bg-ios-emerald/15 text-ios-emerald num-tab';
+      } else {
+        diffBadge.textContent = `+${formatNumberDE(diff, 1)} kg`;
+        diffBadge.className = 'text-xs font-bold px-2.5 py-1 rounded-full bg-ios-amber/15 text-ios-amber num-tab';
+      }
+
+      renderWeightSvgChart(history);
+
+      // 3. Fortschrittsfotos
+      renderProgressPhotos();
+    }
+
+    function renderWeightSvgChart(history) {
+      const svg = document.getElementById('weight-chart-svg');
+      svg.innerHTML = '';
+
+      if (!history || history.length === 0) {
+        svg.innerHTML = `<text x="160" y="75" text-anchor="middle" fill="#8E95A5" font-size="12">Noch keine Gewichtsdaten</text>`;
+        return;
+      }
+
+      const pointsData = history.slice(-14);
+      const weights = pointsData.map((d) => Number(d.weight));
+      const minW = Math.min(...weights) - 0.8;
+      const maxW = Math.max(...weights) + 0.8;
+      const range = Math.max(1, maxW - minW);
+
+      const padLeft = 36;
+      const padRight = 14;
+      const padTop = 18;
+      const padBottom = 24;
+      const chartW = 320 - padLeft - padRight;
+      const chartH = 140 - padTop - padBottom;
+
+      const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+      defs.innerHTML = `
+        <linearGradient id="weightAreaGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#0A84FF" stop-opacity="0.35"/>
+          <stop offset="100%" stop-color="#0A84FF" stop-opacity="0.0"/>
+        </linearGradient>
+      `;
+      svg.appendChild(defs);
+
+      [maxW, minW].forEach((val, idx) => {
+        const y = idx === 0 ? padTop : padTop + chartH;
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', padLeft);
+        line.setAttribute('x2', 320 - padRight);
+        line.setAttribute('y1', y);
+        line.setAttribute('y2', y);
+        line.setAttribute('stroke', 'rgba(255,255,255,0.08)');
+        line.setAttribute('stroke-dasharray', '3 3');
+        svg.appendChild(line);
+
+        const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        label.setAttribute('x', padLeft - 6);
+        label.setAttribute('y', y + 4);
+        label.setAttribute('text-anchor', 'end');
+        label.setAttribute('fill', '#8E95A5');
+        label.setAttribute('font-size', '10');
+        label.textContent = val.toFixed(1);
+        svg.appendChild(label);
+      });
+
+      const coords = pointsData.map((item, i) => {
+        const x = pointsData.length === 1
+          ? padLeft + chartW / 2
+          : padLeft + (i / (pointsData.length - 1)) * chartW;
+        const norm = (Number(item.weight) - minW) / range;
+        const y = padTop + chartH - norm * chartH;
+        return { x, y, weight: item.weight, date: item.date };
+      });
+
+      if (coords.length > 1) {
+        const areaPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        const first = coords[0];
+        const last = coords[coords.length - 1];
+        let d = `M ${first.x} ${padTop + chartH} `;
+        coords.forEach((c) => { d += `L ${c.x} ${c.y} `; });
+        d += `L ${last.x} ${padTop + chartH} Z`;
+        areaPath.setAttribute('d', d);
+        areaPath.setAttribute('fill', 'url(#weightAreaGrad)');
+        svg.appendChild(areaPath);
+
+        const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+        poly.setAttribute('points', coords.map((c) => `${c.x},${c.y}`).join(' '));
+        poly.setAttribute('fill', 'none');
+        poly.setAttribute('stroke', '#0A84FF');
+        poly.setAttribute('stroke-width', '2.5');
+        poly.setAttribute('stroke-linecap', 'round');
+        poly.setAttribute('stroke-linejoin', 'round');
+        svg.appendChild(poly);
+      }
+
+      coords.forEach((c, idx) => {
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', c.x);
+        circle.setAttribute('cy', c.y);
+        circle.setAttribute('r', idx === coords.length - 1 ? '4.5' : '3');
+        circle.setAttribute('fill', idx === coords.length - 1 ? '#30D158' : '#0A84FF');
+        circle.setAttribute('stroke', '#090A0F');
+        circle.setAttribute('stroke-width', '1.5');
+        svg.appendChild(circle);
+
+        if (idx === 0 || idx === coords.length - 1) {
+          const dLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          dLabel.setAttribute('x', c.x);
+          dLabel.setAttribute('y', 134);
+          dLabel.setAttribute('text-anchor', idx === 0 && coords.length > 1 ? 'start' : idx === coords.length - 1 && coords.length > 1 ? 'end' : 'middle');
+          dLabel.setAttribute('fill', '#8E95A5');
+          dLabel.setAttribute('font-size', '10');
+          const parts = c.date.split('-');
+          dLabel.textContent = `${parts[2]}.${parts[1]}.`;
+          svg.appendChild(dLabel);
+        }
+      });
+    }
+
+    function renderProgressPhotos() {
+      const grid = document.getElementById('progress-photos-grid');
+      const empty = document.getElementById('progress-photos-empty');
+      grid.innerHTML = '';
+
+      if (!appState.progressPhotos || appState.progressPhotos.length === 0) {
+        empty.classList.remove('hidden');
+        return;
+      }
+
+      empty.classList.add('hidden');
+      appState.progressPhotos.forEach((photo) => {
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'relative aspect-[3/4] rounded-2xl overflow-hidden bg-black/50 border border-white/10 group active:scale-95 transition text-left';
+
+        const img = document.createElement('img');
+        img.src = photo.dataUrl;
+        img.alt = `Formcheck ${photo.date}`;
+        img.className = 'w-full h-full object-cover';
+
+        const overlay = document.createElement('div');
+        overlay.className = 'absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-2.5';
+        overlay.innerHTML = `
+          <p class="text-xs font-extrabold text-white num-tab">${formatNumberDE(photo.weight, 1)} kg</p>
+          <p class="text-[10px] text-ios-gray">${formatGermanDate(photo.date)}</p>
+        `;
+
+        item.appendChild(img);
+        item.appendChild(overlay);
+
+        item.addEventListener('click', () => {
+          document.getElementById('viewer-photo-img').src = photo.dataUrl;
+          document.getElementById('viewer-photo-date').textContent = formatGermanDate(photo.date);
+          document.getElementById('viewer-photo-weight').textContent = `${formatNumberDE(photo.weight, 1)} kg`;
+
+          const delBtn = document.getElementById('viewer-delete-photo-btn');
+          delBtn.onclick = () => {
+            appState.progressPhotos = appState.progressPhotos.filter((p) => p.id !== photo.id);
+            saveState();
+            renderProgressPhotos();
+            closeModal('photo-viewer-modal');
+            showToast('Foto gelöscht');
+          };
+
+          openModal('photo-viewer-modal');
+        });
+
+        grid.appendChild(item);
+      });
+    }
+
+    document.querySelectorAll('.add-steps-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const add = parseInt(btn.dataset.addSteps, 10) || 0;
+        getTodayData().steps = (getTodayData().steps || 0) + add;
+        saveState();
+        renderKoerperTab();
+        renderDashboard();
+        showToast(`+${formatNumberDE(add)} Schritte hinzugefügt!`, 'amber');
+      });
+    });
+
+    document.getElementById('steps-exact-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const input = document.getElementById('steps-exact-input');
+      const val = parseInt(input.value, 10);
+      if (isNaN(val) || val < 0) return;
+      getTodayData().steps = val;
+      input.value = '';
+      saveState();
+      renderKoerperTab();
+      renderDashboard();
+      showToast(`Schritte auf ${formatNumberDE(val)} gesetzt`, 'amber');
+    });
+
+    document.getElementById('weight-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const input = document.getElementById('weight-input');
+      const raw = input.value.replace(',', '.').trim();
+      const val = parseFloat(raw);
+      if (isNaN(val) || val < 25 || val > 350) {
+        showToast('Bitte gültiges Gewicht eingeben', 'red');
+        return;
+      }
+      const rounded = Math.round(val * 10) / 10;
+      addWeightEntry(rounded);
+      input.value = '';
+      saveState();
+      renderKoerperTab();
+      showToast(`Gewicht ${formatNumberDE(rounded, 1)} kg gespeichert!`);
+    });
+
+    document.getElementById('progress-photo-input').addEventListener('change', async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      try {
+        const compressed = await compressImageFile(file, 560, 0.65);
+        const currentW = appState.weightHistory.length > 0
+          ? appState.weightHistory[appState.weightHistory.length - 1].weight
+          : appState.settings.startWeight;
+
+        appState.progressPhotos.unshift({
+          id: 'photo-' + Date.now(),
+          date: getTodayKey(),
+          weight: currentW,
+          dataUrl: compressed
+        });
+
+        saveState();
+        renderProgressPhotos();
+        showToast('Fortschrittsfoto gespeichert!', 'blue');
+      } catch (err) {
+        showToast('Foto konnte nicht gespeichert werden', 'red');
+      }
+      e.target.value = '';
+    });
+
+    // =========================================================
+    // TAB 4: SETUP (DEXCOM G7 SYNC, EINSTELLUNGEN & BACKUP)
+    // =========================================================
+    function copyTextToClipboard(text, successMessage) {
+      const tempArea = document.createElement('textarea');
+      tempArea.value = text;
+      tempArea.style.position = 'fixed';
+      tempArea.style.opacity = '0';
+      document.body.appendChild(tempArea);
+      tempArea.select();
+      try {
+        document.execCommand('copy');
+        showToast(successMessage, 'emerald');
+      } catch (err) {
+        showToast('Kopieren fehlgeschlagen – bitte manuell markieren', 'red');
+      }
+      document.body.removeChild(tempArea);
+    }
+
+    function renderSetupTab() {
+      const s = appState.settings;
+      document.getElementById('setup-dexcom-feed-url').value = s.dexcomFeedUrl || '';
+      document.getElementById('setup-dexcom-autosync').checked = Boolean(s.dexcomAutoSync);
+      document.getElementById('setup-api-key').value = s.apiKey || '';
+      document.getElementById('setup-ke-factor').value = s.keFactor;
+      document.getElementById('setup-target-bz').value = s.targetBz;
+      document.getElementById('setup-isf').value = s.isf;
+      document.getElementById('setup-cal-goal').value = s.calGoal;
+      document.getElementById('setup-steps-goal').value = s.stepsGoal;
+      document.getElementById('setup-protein-goal').value = s.proteinGoal;
+      document.getElementById('setup-carbs-goal').value = s.carbsGoal;
+      document.getElementById('setup-fat-goal').value = s.fatGoal;
+      document.getElementById('setup-start-weight').value = s.startWeight;
+    }
+
+    // Dexcom Live-Feed URL speichern & testen ("Jetzt abrufen")
+    document.getElementById('test-dexcom-feed-btn').addEventListener('click', () => {
+      appState.settings.dexcomFeedUrl = document.getElementById('setup-dexcom-feed-url').value.trim();
+      appState.settings.dexcomAutoSync = document.getElementById('setup-dexcom-autosync').checked;
+      saveState();
+      setupDexcomAutoPolling();
+      fetchDexcomLiveFeed(true);
+    });
+
+    document.getElementById('setup-dexcom-autosync').addEventListener('change', (e) => {
+      appState.settings.dexcomFeedUrl = document.getElementById('setup-dexcom-feed-url').value.trim();
+      appState.settings.dexcomAutoSync = e.target.checked;
+      saveState();
+      setupDexcomAutoPolling();
+      showToast(e.target.checked ? '5-Minuten Auto-Sync aktiviert' : 'Auto-Sync pausiert', 'emerald');
+    });
+
+    // Cloudflare Worker Drawer ein-/ausklappen
+    document.getElementById('toggle-worker-drawer-btn').addEventListener('click', (e) => {
+      const content = document.getElementById('worker-drawer-content');
+      const chevron = document.getElementById('worker-drawer-chevron');
+      const isHidden = content.classList.contains('hidden');
+      if (isHidden) {
+        content.classList.remove('hidden');
+        chevron.style.transform = 'rotate(180deg)';
+        e.currentTarget.setAttribute('aria-expanded', 'true');
+      } else {
+        content.classList.add('hidden');
+        chevron.style.transform = 'rotate(0deg)';
+        e.currentTarget.setAttribute('aria-expanded', 'false');
+      }
+    });
+
+    document.getElementById('copy-worker-code-btn').addEventListener('click', () => {
+      const code = document.getElementById('cloudflare-worker-code').textContent;
+      copyTextToClipboard(code, 'Cloudflare Worker-Code kopiert!');
+    });
+
+    document.getElementById('copy-shortcut-url-btn').addEventListener('click', () => {
+      const baseUrl = window.location.origin + window.location.pathname;
+      const sampleUrl = `${baseUrl}?bz=118&trend=Flat&steps=8500&weight=89.5`;
+      copyTextToClipboard(sampleUrl, 'Kurzbefehl-URL kopiert!');
+    });
+
+    // Gemini API Key
+    document.getElementById('toggle-api-key-vis').addEventListener('click', (e) => {
+      const inp = document.getElementById('setup-api-key');
+      if (inp.type === 'password') {
+        inp.type = 'text';
+        e.target.textContent = 'Verbergen';
+      } else {
+        inp.type = 'password';
+        e.target.textContent = 'Anzeigen';
+      }
+    });
+
+    document.getElementById('save-api-key-btn').addEventListener('click', () => {
+      const key = document.getElementById('setup-api-key').value.trim();
+      appState.settings.apiKey = key;
+      saveState();
+      updateAiStatusHeader();
+      showToast(key ? 'Gemini API-Key gespeichert!' : 'API-Key entfernt', 'blue');
+    });
+
+    document.getElementById('test-api-key-btn').addEventListener('click', async () => {
+      const key = document.getElementById('setup-api-key').value.trim();
+      if (!key) {
+        showToast('Bitte erst einen API-Key eintragen', 'red');
+        return;
+      }
+      appState.settings.apiKey = key;
+      saveState();
+      showToast('Teste Verbindung zu Gemini...', 'blue');
+
+      try {
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(key)}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ role: 'user', parts: [{ text: 'Antworte nur mit: OK' }] }]
+            })
+          }
+        );
+        if (res.ok) {
+          updateAiStatusHeader();
+          showToast('Verbindung zu Gemini 2.5 Flash steht! ✓');
+        } else {
+          const err = await res.json().catch(() => ({}));
+          showToast(err?.error?.message || 'Key ungültig', 'red');
+        }
+      } catch (e) {
+        showToast('Netzwerkfehler beim Testen', 'red');
+      }
+    });
+
+    // Alle Einstellungen speichern
+    document.getElementById('save-settings-btn').addEventListener('click', () => {
+      const s = appState.settings;
+      s.dexcomFeedUrl = document.getElementById('setup-dexcom-feed-url').value.trim();
+      s.dexcomAutoSync = document.getElementById('setup-dexcom-autosync').checked;
+      s.apiKey = document.getElementById('setup-api-key').value.trim();
+      s.keFactor = Math.max(0.1, parseFloat(document.getElementById('setup-ke-factor').value) || 2.2);
+      s.targetBz = Math.max(70, parseInt(document.getElementById('setup-target-bz').value, 10) || 110);
+      s.isf = Math.max(5, parseInt(document.getElementById('setup-isf').value, 10) || 35);
+      s.calGoal = Math.max(800, parseInt(document.getElementById('setup-cal-goal').value, 10) || 2200);
+      s.stepsGoal = Math.max(1000, parseInt(document.getElementById('setup-steps-goal').value, 10) || 10000);
+      s.proteinGoal = Math.max(20, parseInt(document.getElementById('setup-protein-goal').value, 10) || 180);
+      s.carbsGoal = Math.max(10, parseInt(document.getElementById('setup-carbs-goal').value, 10) || 200);
+      s.fatGoal = Math.max(10, parseInt(document.getElementById('setup-fat-goal').value, 10) || 65);
+
+      const sw = parseFloat(document.getElementById('setup-start-weight').value.replace(',', '.'));
+      if (!isNaN(sw) && sw > 25 && sw < 350) {
+        s.startWeight = Math.round(sw * 10) / 10;
+      }
+
+      saveState();
+      setupDexcomAutoPolling();
+      renderAll();
+      showToast('Alle Einstellungen gespeichert!');
+    });
+
+    // Backup Export (JSON)
+    document.getElementById('export-backup-btn').addEventListener('click', () => {
+      try {
+        const jsonStr = JSON.stringify(appState, null, 2);
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `GlucoFit-Backup-${getTodayKey()}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        showToast('Backup als JSON exportiert!');
+      } catch (err) {
+        showToast('Export fehlgeschlagen', 'red');
+      }
+    });
+
+    // Backup Import (JSON)
+    document.getElementById('import-backup-input').addEventListener('change', (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const imported = JSON.parse(ev.target.result);
+          if (!imported || typeof imported !== 'object' || !imported.settings) {
+            throw new Error('Ungültige Backup-Datei');
+          }
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(imported));
+          appState = loadState();
+          setupDexcomAutoPolling();
+          renderAll();
+          showToast('Backup erfolgreich wiederhergestellt!');
+        } catch (err) {
+          showToast('Ungültige JSON-Backup-Datei', 'red');
+        }
+      };
+      reader.readAsText(file);
+      e.target.value = '';
+    });
+
+    // Alle Daten zurücksetzen
+    document.getElementById('reset-all-data-btn').addEventListener('click', () => {
+      showConfirmDialog(
+        'Alle Daten löschen?',
+        'Damit werden alle Mahlzeiten, Gewichte, Fotos und Einstellungen auf diesem Gerät unwiderruflich zurückgesetzt.',
+        () => {
+          localStorage.removeItem(STORAGE_KEY);
+          appState = getDefaultState();
+          saveState();
+          setupDexcomAutoPolling();
+          renderAll();
+          showToast('App wurde zurückgesetzt');
+        }
+      );
+    });
+
+    // =========================================================
+    // INITIALISIERUNG BEIM APP-START
+    // =========================================================
+    function renderAll() {
+      renderDashboard();
+      renderChatHistory();
+      renderKoerperTab();
+      renderSetupTab();
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const importedFromUrl = handleUrlParameters(false);
+      renderAll();
+      setupDexcomAutoPolling();
+
+      // Falls keine URL-Parameter übergeben wurden & Auto-Sync aktiv ist, Live-Feed direkt abrufen
+      if (!importedFromUrl && appState.settings.dexcomAutoSync && (appState.settings.dexcomFeedUrl || '').trim()) {
+        fetchDexcomLiveFeed(false);
+      }
+    });
+  </script>
+</body>
+</html>
